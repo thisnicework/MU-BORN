@@ -9,7 +9,12 @@ import {
 } from "@/data/content";
 import { LOGOS } from "@/data/logos";
 import mediaManifest from "@/data/media-manifest.json";
-import { SectionFolio } from "@/components/CuteArt";
+import {
+  SectionFolio,
+  ClawGripper,
+  JoystickObjet,
+  DarkCornerScene,
+} from "@/components/CuteArt";
 
 interface LightboxItem {
   year: number | string;
@@ -23,8 +28,16 @@ export default function MubornPage() {
   return (
     <div className="pt-16 md:pt-[68px] bg-[#FAF9F4] text-[#1D3C63]">
       {/* Masthead Band */}
-      <section className="bg-[#FCF686] py-16 sm:py-24 border-b border-[#1D3C63]/16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+      <section className="bg-[#FCF686] py-16 sm:py-24 border-b border-[#1D3C63]/16 relative overflow-hidden">
+        {/* Subtle Claw Machine architectural silhouette in right negative space */}
+        <div className="hidden lg:block absolute top-0 right-[11%] pointer-events-none opacity-90">
+          <ClawGripper className="w-16 h-20" />
+        </div>
+        <div className="hidden lg:block absolute bottom-0 right-[8%] pointer-events-none">
+          <JoystickObjet className="w-40 h-16" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10 relative">
           <SectionFolio index="00" title="ABOUT MU:BORN" meta="SEOUL INSTITUTE OF THE ARTS" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
@@ -40,7 +53,7 @@ export default function MubornPage() {
                 뮤지컬의 근본(本)
               </h1>
             </div>
-            <div className="lg:col-span-4 lg:text-right space-y-1 text-xs text-[#1D3C63]/70">
+            <div className="lg:col-span-4 lg:text-right lg:pb-12 space-y-1 text-xs text-[#1D3C63]/70">
               <div className="print-eyebrow">CREATIVE MUSICAL PLATFORM</div>
               <div className="print-num font-semibold">2016 — 2026</div>
             </div>
@@ -140,10 +153,13 @@ export default function MubornPage() {
           <SectionFolio index="03" title={MUBORN_INTENT.sectionTitle} meta="CURATORIAL NOTE" dark />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-5 flex flex-col justify-between gap-10">
               <blockquote className="text-2xl sm:text-3xl font-bold leading-[1.35] text-[#FCF686]">
                 “{MUBORN_INTENT.headline}”
               </blockquote>
+              <div className="hidden lg:block pt-4">
+                <DarkCornerScene className="w-56 h-40 opacity-95" />
+              </div>
             </div>
             <div className="lg:col-span-7 print-measure print-body text-white/85 space-y-5 lg:border-l lg:border-white/15 lg:pl-10">
               {MUBORN_INTENT.paragraphs.map((p, idx) => (

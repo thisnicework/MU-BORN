@@ -4,7 +4,11 @@ import { ArrowUpRight, Camera, X, Play } from "lucide-react";
 import { DINOZ_WORK } from "@/data/content";
 import { LOGOS } from "@/data/logos";
 import mediaManifest from "@/data/media-manifest.json";
-import { BarcodeSvg, SectionFolio } from "@/components/CuteArt";
+import {
+  BarcodeSvg,
+  SectionFolio,
+  DinozVignette,
+} from "@/components/CuteArt";
 
 interface CastCardItem {
   order: number;
@@ -135,9 +139,14 @@ export default function DinozPage() {
           <SectionFolio index="02" title="SYNOPSIS" meta="DINOZ / STORY" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div className="lg:col-span-4 space-y-4">
-              <h2 className="font-display text-3xl sm:text-4xl font-bold">Synopsis</h2>
-              <BarcodeSvg className="h-5 w-24 text-[#1D3C63]/55" />
+            <div className="lg:col-span-4 flex flex-col justify-between gap-8">
+              <div className="space-y-4">
+                <h2 className="font-display text-3xl sm:text-4xl font-bold">Synopsis</h2>
+                <BarcodeSvg className="h-5 w-24 text-[#1D3C63]/55" />
+              </div>
+              <div className="hidden lg:block pt-6">
+                <DinozVignette className="w-36 h-28" />
+              </div>
             </div>
             <div className="lg:col-span-8 bg-[#1D3C63] text-white p-8 sm:p-12">
               <div className="print-measure print-body text-white/90 space-y-5">

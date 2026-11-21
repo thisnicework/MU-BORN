@@ -4,7 +4,11 @@ import { ArrowUpRight, Camera, X } from "lucide-react";
 import { SEMOKKEUT_WORK } from "@/data/content";
 import { LOGOS } from "@/data/logos";
 import mediaManifest from "@/data/media-manifest.json";
-import { BarcodeSvg, SectionFolio } from "@/components/CuteArt";
+import {
+  BarcodeSvg,
+  SectionFolio,
+  SemokkeutVignette,
+} from "@/components/CuteArt";
 
 interface CastCardItem {
   order: number;
@@ -125,11 +129,16 @@ export default function SemokkeutPage() {
           <SectionFolio index="02" title="SYNOPSIS" meta="CHAPTER I" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            <div className="lg:col-span-4 space-y-4">
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1D3C63]">
-                Synopsis
-              </h2>
-              <BarcodeSvg className="h-5 w-24 text-[#1D3C63]/55" />
+            <div className="lg:col-span-4 flex flex-col justify-between gap-8">
+              <div className="space-y-4">
+                <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#1D3C63]">
+                  Synopsis
+                </h2>
+                <BarcodeSvg className="h-5 w-24 text-[#1D3C63]/55" />
+              </div>
+              <div className="hidden lg:block pt-6">
+                <SemokkeutVignette className="w-36 h-28" />
+              </div>
             </div>
             <div className="lg:col-span-8 bg-[#1D3C63] text-white p-8 sm:p-12 space-y-7">
               <div className="flex items-center justify-between border-b border-white/15 pb-5">

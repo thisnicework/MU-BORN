@@ -185,28 +185,28 @@ const SHOW_TABS: Array<{
   defaultCategory: ProfileCategory;
   categories: Array<{ key: ProfileCategory; label: string }>;
 }> = [
-  {
-    key: "dinoz",
-    label: "다이노즈",
-    en: "DINOZ",
-    defaultCategory: "dinoz-cast",
-    categories: [
-      { key: "dinoz-cast", label: "캐스트" },
-      { key: "dinoz-perf", label: "퍼포머" },
-      { key: "dinoz-team", label: "창작진" },
-    ],
-  },
-  {
-    key: "semokkeut",
-    label: "세상 모든 이야기의 끝",
-    en: "SEMOKKEUT",
-    defaultCategory: "semo-cast",
-    categories: [
-      { key: "semo-cast", label: "캐스트" },
-      { key: "semo-team", label: "창작진" },
-    ],
-  },
-];
+    {
+      key: "dinoz",
+      label: "다이노즈",
+      en: "DINOZ",
+      defaultCategory: "dinoz-cast",
+      categories: [
+        { key: "dinoz-cast", label: "캐스트" },
+        { key: "dinoz-perf", label: "퍼포머" },
+        { key: "dinoz-team", label: "창작진" },
+      ],
+    },
+    {
+      key: "semokkeut",
+      label: "세상 모든 이야기의 끝",
+      en: "SEMOKKEUT",
+      defaultCategory: "semo-cast",
+      categories: [
+        { key: "semo-cast", label: "캐스트" },
+        { key: "semo-team", label: "창작진" },
+      ],
+    },
+  ];
 
 const ALL_PROFILES: ProfileOption[] = [
   ...mediaManifest.dinozCast.map((p) => ({
@@ -367,11 +367,11 @@ export default function PhotoboothPage() {
 
   const initialTheme: FrameThemeKey =
     FRAME_THEMES[requestedFrame].show === "common" ||
-    FRAME_THEMES[requestedFrame].show === initialPartner.show
+      FRAME_THEMES[requestedFrame].show === initialPartner.show
       ? requestedFrame
       : initialPartner.show === "semokkeut"
-      ? "semo-pastel"
-      : "dinoz-film";
+        ? "semo-pastel"
+        : "dinoz-film";
 
   const [partner, setPartner] = useState<ProfileOption>(initialPartner);
   const [showTab, setShowTab] = useState<ShowKey>(initialPartner.show);
@@ -404,6 +404,26 @@ export default function PhotoboothPage() {
       ),
     [partner.show]
   );
+
+  const handleSelectShow = (show: (typeof SHOW_TABS)[number]) => {
+    setShowTab(show.key);
+    setProfileTab(show.defaultCategory);
+    setProfileSearch("");
+
+    if (partner.show !== show.key) {
+      const firstOfShow = ALL_PROFILES.find(
+        (p) => p.show === show.key && !p.noPhoto
+      );
+      if (firstOfShow) {
+        setPartner(firstOfShow);
+      }
+    }
+
+    const currentThemeShow = FRAME_THEMES[themeKey].show;
+    if (currentThemeShow !== "common" && currentThemeShow !== show.key) {
+      setThemeKey(show.key === "semokkeut" ? "semo-pastel" : "dinoz-film");
+    }
+  };
 
   const handleSelectPartner = (p: ProfileOption) => {
     setPartner(p);
@@ -897,18 +917,12 @@ export default function PhotoboothPage() {
                     <button
                       key={s.key}
                       type="button"
-                      onClick={() => {
-                        setShowTab(s.key);
-                        setProfileTab(s.defaultCategory);
-                        setProfileSearch("");
-                      }}
-                      className={`px-4 py-3 text-left transition-colors ${
-                        idx === 0 ? "border-r border-[#1D3C63]/20" : ""
-                      } ${
-                        isActiveShow
+                      onClick={() => handleSelectShow(s)}
+                      className={`px-4 py-3 text-left transition-colors ${idx === 0 ? "border-r border-[#1D3C63]/20" : ""
+                        } ${isActiveShow
                           ? "bg-[#1D3C63] text-[#FCF686]"
                           : "bg-[#FAF9F4] text-[#1D3C63]/75 hover:bg-white"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="text-xs sm:text-sm font-bold truncate">
@@ -939,11 +953,10 @@ export default function PhotoboothPage() {
                           setProfileTab(c.key);
                           setProfileSearch("");
                         }}
-                        className={`px-3 py-1.5 text-[11.5px] border transition-colors ${
-                          profileTab === c.key && !profileSearch
-                            ? "bg-[#FCF686] border-[#1D3C63] text-[#1D3C63] font-bold"
-                            : "bg-white border-[#1D3C63]/16 text-[#1D3C63]/75 hover:border-[#1D3C63]"
-                        }`}
+                        className={`px-3 py-1.5 text-[11.5px] border transition-colors ${profileTab === c.key && !profileSearch
+                          ? "bg-[#FCF686] border-[#1D3C63] text-[#1D3C63] font-bold"
+                          : "bg-white border-[#1D3C63]/16 text-[#1D3C63]/75 hover:border-[#1D3C63]"
+                          }`}
                       >
                         {c.label}{" "}
                         <span className="print-num opacity-60">{cCount}</span>
@@ -988,13 +1001,12 @@ export default function PhotoboothPage() {
                       onClick={() => handleSelectPartner(p)}
                       disabled={p.noPhoto}
                       title={p.noPhoto ? "프로필 촬영 전" : undefined}
-                      className={`overflow-hidden border text-left transition-all ${
-                        p.noPhoto
-                          ? "border-[#1D3C63]/10 opacity-35 grayscale cursor-not-allowed"
-                          : active
+                      className={`overflow-hidden border text-left transition-all ${p.noPhoto
+                        ? "border-[#1D3C63]/10 opacity-35 grayscale cursor-not-allowed"
+                        : active
                           ? "border-[#1D3C63] ring-2 ring-[#1D3C63]"
                           : "border-[#1D3C63]/15 opacity-80 hover:opacity-100"
-                      }`}
+                        }`}
                     >
                       <img
                         src={p.image}
@@ -1003,9 +1015,8 @@ export default function PhotoboothPage() {
                         className="w-full aspect-square object-cover object-top"
                       />
                       <div
-                        className={`p-1.5 leading-tight ${
-                          active ? "bg-[#1D3C63] text-[#FCF686]" : "bg-[#FAF9F4] text-[#1D3C63]"
-                        }`}
+                        className={`p-1.5 leading-tight ${active ? "bg-[#1D3C63] text-[#FCF686]" : "bg-[#FAF9F4] text-[#1D3C63]"
+                          }`}
                       >
                         <div className="text-[9px] opacity-75 truncate">{p.role}</div>
                         <div className="text-[11px] font-bold truncate">{p.name}</div>

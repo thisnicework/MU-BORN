@@ -7,7 +7,11 @@ import {
   VENUES,
   SPONSORS,
 } from "@/data/content";
-import { ClawGripper, SectionFolio } from "@/components/CuteArt";
+import {
+  ClawGripper,
+  SectionFolio,
+  DarkCornerScene,
+} from "@/components/CuteArt";
 
 export default function GuidePage() {
   return (
@@ -80,24 +84,30 @@ export default function GuidePage() {
               </div>
 
               {/* On-site Ticket */}
-              <div className="bg-[#1D3C63] text-white p-7 sm:p-9 border-r border-b border-[#1D3C63] space-y-6">
-                <div className="pb-4 border-b border-white/25 flex items-baseline justify-between">
-                  <div>
-                    <span className="print-eyebrow text-[#FCF686]/75 block">03</span>
-                    <h2 className="font-display text-lg font-bold text-[#FCF686] mt-0.5">
-                      On-site Ticket
-                    </h2>
+              <div className="bg-[#1D3C63] text-white p-7 sm:p-9 pb-36 sm:pb-40 border-r border-b border-[#1D3C63] relative overflow-hidden">
+                <div className="space-y-6 relative z-10">
+                  <div className="pb-4 border-b border-white/25 flex items-baseline justify-between">
+                    <div>
+                      <span className="print-eyebrow text-[#FCF686]/75 block">03</span>
+                      <h2 className="font-display text-lg font-bold text-[#FCF686] mt-0.5">
+                        On-site Ticket
+                      </h2>
+                    </div>
+                    <span className="text-xs font-medium text-white/65">현장 예매 안내</span>
                   </div>
-                  <span className="text-xs font-medium text-white/65">현장 예매 안내</span>
+                  <ul className="space-y-3 text-[14px] text-white/85 leading-[1.8]">
+                    {ONSITE_TICKET_GUIDE.map((item, idx) => (
+                      <li key={idx} className="grid grid-cols-[14px_1fr] gap-1.5">
+                        <span className="font-bold text-[#FCF686]/70">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-3 text-[14px] text-white/85 leading-[1.8]">
-                  {ONSITE_TICKET_GUIDE.map((item, idx) => (
-                    <li key={idx} className="grid grid-cols-[14px_1fr] gap-1.5">
-                      <span className="font-bold text-[#FCF686]/70">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                {/* Organic Card-2 corner vignette tucked into bottom-right negative space */}
+                <div className="absolute -bottom-2 right-2 pointer-events-none opacity-95">
+                  <DarkCornerScene className="w-48 h-34" />
+                </div>
               </div>
             </div>
           </div>

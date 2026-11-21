@@ -8,6 +8,8 @@ import {
   FollowArrowBadge,
   BarcodeSvg,
   SectionFolio,
+  ClawGripper,
+  FloatingStars,
 } from "@/components/CuteArt";
 
 export default function HomePage() {
@@ -33,7 +35,12 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-l border-[#1D3C63]/20 bg-white">
+              <div className="relative pt-1">
+                {/* Claw gripping the top edge of the white notice card (homage to MU:BORN Card 5) */}
+                <div className="hidden sm:block absolute -top-12 right-10 pointer-events-none z-10">
+                  <ClawGripper className="w-14 h-16" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 border-t border-l border-[#1D3C63]/20 bg-white relative">
                 {/* ① DINOZ */}
                 <Link
                   to="/tickets?show=dinoz"
@@ -105,6 +112,7 @@ export default function HomePage() {
                     <FollowArrowBadge label="" />
                   </div>
                 </Link>
+              </div>
               </div>
             </div>
 
@@ -320,8 +328,11 @@ export default function HomePage() {
       </section>
 
       {/* 4. CHAPTER 03: PHOTOISM SPECIAL BAND */}
-      <section className="py-16 sm:py-20 bg-[#1D3C63] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <section className="py-16 sm:py-20 bg-[#1D3C63] text-white relative overflow-hidden">
+        <div className="hidden lg:block absolute top-14 right-14 pointer-events-none opacity-80">
+          <FloatingStars className="w-24 h-20" dark />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 relative">
           <SectionFolio index="03" title="SPECIAL EDITION · PHOTOISM" meta="4-CUT FRAME" dark />
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
             <div className="lg:col-span-8 space-y-3">
