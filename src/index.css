@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-serif: "Noto Serif KR", "AppleMyungjo", Georgia, serif;
+  --font-display: "Space Grotesk", "Pretendard Variable", Pretendard, sans-serif;
+
+  --color-muborn-navy: #1D3C63;
+  --color-muborn-navy-deep: #132A47;
+  --color-muborn-yellow: #FCF686;
+  --color-muborn-yellow-soft: #FEFBC8;
+  --color-muborn-sage: #C5DB9B;
+  --color-muborn-sky: #8DB4E2;
+  --color-muborn-gold: #F4BE52;
+  --color-muborn-paper: #FAF9F4;
+}
+
+/* ==========================================================================
+   Korean Editorial & Swiss Print Design System
+   (한글 편집·인쇄디자인 · 프로그램북 · 스위스 그리드 법칙)
+   ========================================================================== */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #FAF9F4;
+    color: #1D3C63;
+    overflow-x: hidden;
+    letter-spacing: -0.024em;
+    word-spacing: -0.02em;
+    line-height: 1.72;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    font-kerning: normal;
+    font-feature-settings: "kern" 1, "liga" 1, "ss05" 1;
+  }
+
+  h1, h2, h3, h4, blockquote {
+    text-wrap: balance;
+    word-break: keep-all;
+  }
+
+  h1 {
+    letter-spacing: -0.04em;
+    line-height: 1.16;
+  }
+
+  h2 {
+    letter-spacing: -0.034em;
+    line-height: 1.24;
+  }
+
+  h3 {
+    letter-spacing: -0.028em;
+    line-height: 1.32;
+  }
+
+  p, li, dd {
+    text-wrap: pretty;
+    word-break: keep-all;
+  }
+
+  table, time, dl dd {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Swiss Eyebrow / Folio Caption */
+.print-eyebrow {
+  font-family: var(--font-display);
+  font-size: 0.6875rem; /* 11px */
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.print-display {
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+/* Korean Editorial Body Copy */
+.print-body {
+  font-size: 0.96875rem; /* 15.5px */
+  line-height: 1.84;
+  letter-spacing: -0.024em;
+  word-spacing: -0.02em;
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+
+/* Korean Serif Body Copy (명조체) */
+.print-serif-body {
+  font-family: var(--font-serif);
+  font-size: 0.96875rem;
+  line-height: 1.94;
+  letter-spacing: -0.018em;
+  word-spacing: 0.01em;
+  word-break: keep-all;
+  text-wrap: pretty;
+}
+
+/* Optimal Print Reading Measure (~38 Hangul chars/line) */
+.print-measure {
+  max-width: 39em;
+}
+
+/* Tabular Numbers */
+.print-num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Crisp Hairline Print Rules */
+.print-rule {
+  border-color: rgba(29, 60, 99, 0.16);
+}
+
+.print-rule-strong {
+  border-color: #1D3C63;
+}
+
+.print-rule-dark {
+  border-color: rgba(255, 255, 255, 0.16);
+}
