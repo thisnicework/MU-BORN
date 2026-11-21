@@ -1,18 +1,73 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Volume2, VolumeX, Play, Pause, Maximize2, X, ArrowUpRight } from "lucide-react";
 import { LOGOS } from "@/data/logos";
 
 export default function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [muted, setMuted] = useState(true);
+  const userToggledMuteRef = useRef(false);
+  const [muted, setMuted] = useState(false);
   const [paused, setPaused] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    let unlockCleanup: (() => void) | null = null;
+
+    const tryAutoplayWithSound = async () => {
+      try {
+        video.muted = false;
+        await video.play();
+        setMuted(false);
+        setPaused(false);
+      } catch {
+        // Browser autoplay policy blocked unmuted autoplay: play muted first
+        // and unmute seamlessly on the very first user gesture.
+        video.muted = true;
+        setMuted(true);
+        try {
+          await video.play();
+          setPaused(false);
+        } catch {
+          setPaused(true);
+        }
+
+        const unlockSound = () => {
+          if (userToggledMuteRef.current || !videoRef.current) return;
+          videoRef.current.muted = false;
+          videoRef.current.play().catch(() => {});
+          setMuted(false);
+          setPaused(false);
+        };
+
+        window.addEventListener("pointerdown", unlockSound, { once: true });
+        window.addEventListener("keydown", unlockSound, { once: true });
+        unlockCleanup = () => {
+          window.removeEventListener("pointerdown", unlockSound);
+          window.removeEventListener("keydown", unlockSound);
+        };
+      }
+    };
+
+    tryAutoplayWithSound();
+
+    return () => {
+      if (unlockCleanup) unlockCleanup();
+    };
+  }, []);
+
   const toggleMute = () => {
     if (!videoRef.current) return;
-    videoRef.current.muted = !muted;
-    setMuted(!muted);
+    userToggledMuteRef.current = true;
+    const nextMuted = !muted;
+    videoRef.current.muted = nextMuted;
+    setMuted(nextMuted);
+    if (!nextMuted && videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setPaused(false);
+    }
   };
 
   const togglePlay = () => {
@@ -35,7 +90,6 @@ export default function HeroVideo() {
             src="/media/video/dinoz-trailer.mp4"
             poster="/media/video/dinoz-poster-frame.webp"
             autoPlay
-            muted
             loop
             playsInline
             className="absolute inset-0 w-full h-full object-cover opacity-85"

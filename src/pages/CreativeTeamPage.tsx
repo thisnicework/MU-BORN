@@ -90,24 +90,21 @@ export default function CreativeTeamPage() {
       {/* Program Book Cover */}
       <section className="bg-[#1D3C63] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 space-y-8">
-          <SectionFolio index="00" title="CREDITS & STAFF" meta="MU:BORN @2026" dark />
+          <SectionFolio index="00" title="CREDITS & STAFF" meta="MU:BORN 2026" dark />
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 text-2xl sm:text-3xl font-light text-white/85">
-                <span>(</span>
-                <img
-                  src={LOGOS.mubornBlackWhiteOutline}
-                  alt="MU:BORN"
-                  className="h-8 sm:h-10 w-auto object-contain"
-                />
-                <span>)</span>
-              </div>
-              <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-[-0.03em]">
-                CREATIVE TEAM
-              </h1>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-2xl sm:text-3xl font-light text-white/85">
+              <span>(</span>
+              <img
+                src={LOGOS.mubornBlackWhiteOutline}
+                alt="MU:BORN"
+                className="h-8 sm:h-10 w-auto object-contain"
+              />
+              <span>)</span>
             </div>
-            <div className="print-num text-2xl sm:text-3xl font-bold text-[#FCF686]">@2026</div>
+            <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-[-0.03em]">
+              CREATIVE TEAM
+            </h1>
           </div>
         </div>
       </section>
@@ -128,11 +125,10 @@ export default function CreativeTeamPage() {
                 key={item.key}
                 type="button"
                 onClick={() => switchTab(item.key)}
-                className={`relative py-4 text-xs sm:text-sm transition-colors ${
-                  tab === item.key
-                    ? "text-[#1D3C63] font-bold"
-                    : "text-[#1D3C63]/55 hover:text-[#1D3C63] font-medium"
-                }`}
+                className={`relative py-4 text-xs sm:text-sm transition-colors ${tab === item.key
+                  ? "text-[#1D3C63] font-bold"
+                  : "text-[#1D3C63]/55 hover:text-[#1D3C63] font-medium"
+                  }`}
               >
                 {item.label}
                 {tab === item.key && (
@@ -178,11 +174,10 @@ export default function CreativeTeamPage() {
                     key={f.key}
                     type="button"
                     onClick={() => setDept(f.key)}
-                    className={`px-3 py-1.5 text-xs border transition-colors ${
-                      dept === f.key
-                        ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686] font-bold"
-                        : "bg-white border-[#1D3C63]/16 text-[#1D3C63]/70 hover:border-[#1D3C63]"
-                    }`}
+                    className={`px-3 py-1.5 text-xs border transition-colors ${dept === f.key
+                      ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686] font-bold"
+                      : "bg-white border-[#1D3C63]/16 text-[#1D3C63]/70 hover:border-[#1D3C63]"
+                      }`}
                   >
                     {f.label}
                   </button>
