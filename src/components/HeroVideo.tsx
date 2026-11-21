@@ -5,8 +5,10 @@ import { LOGOS } from "@/data/logos";
 
 export default function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const muteBtnRef = useRef<HTMLButtonElement | null>(null);
   const userToggledMuteRef = useRef(false);
   const [muted, setMuted] = useState(false);
+  const [soundBlocked, setSoundBlocked] = useState(false);
   const [paused, setPaused] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -21,12 +23,14 @@ export default function HeroVideo() {
         video.muted = false;
         await video.play();
         setMuted(false);
+        setSoundBlocked(false);
         setPaused(false);
       } catch {
         // Browser autoplay policy blocked unmuted autoplay: play muted first
         // and unmute seamlessly on the very first user gesture.
         video.muted = true;
         setMuted(true);
+        setSoundBlocked(true);
         try {
           await video.play();
           setPaused(false);
@@ -34,20 +38,30 @@ export default function HeroVideo() {
           setPaused(true);
         }
 
-        const unlockSound = () => {
-          if (userToggledMuteRef.current || !videoRef.current) return;
-          videoRef.current.muted = false;
-          videoRef.current.play().catch(() => {});
-          setMuted(false);
-          setPaused(false);
-        };
-
-        window.addEventListener("pointerdown", unlockSound, { once: true });
-        window.addEventListener("keydown", unlockSound, { once: true });
-        unlockCleanup = () => {
+        const removeListeners = () => {
           window.removeEventListener("pointerdown", unlockSound);
           window.removeEventListener("keydown", unlockSound);
         };
+
+        const unlockSound = (e: Event) => {
+          removeListeners();
+          if (
+            userToggledMuteRef.current ||
+            !videoRef.current ||
+            (e.target instanceof Node && muteBtnRef.current?.contains(e.target))
+          ) {
+            return;
+          }
+          videoRef.current.muted = false;
+          videoRef.current.play().catch(() => {});
+          setMuted(false);
+          setSoundBlocked(false);
+          setPaused(false);
+        };
+
+        window.addEventListener("pointerdown", unlockSound);
+        window.addEventListener("keydown", unlockSound);
+        unlockCleanup = removeListeners;
       }
     };
 
@@ -64,6 +78,7 @@ export default function HeroVideo() {
     const nextMuted = !muted;
     videoRef.current.muted = nextMuted;
     setMuted(nextMuted);
+    setSoundBlocked(false);
     if (!nextMuted && videoRef.current.paused) {
       videoRef.current.play().catch(() => {});
       setPaused(false);
@@ -89,7 +104,6 @@ export default function HeroVideo() {
             ref={videoRef}
             src="/media/video/dinoz-trailer.mp4"
             poster="/media/video/dinoz-poster-frame.webp"
-            autoPlay
             loop
             playsInline
             className="absolute inset-0 w-full h-full object-cover opacity-85"
@@ -107,13 +121,24 @@ export default function HeroVideo() {
               {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
             </button>
             <button
+              ref={muteBtnRef}
               type="button"
               onClick={toggleMute}
               aria-label={muted ? "소리 켜기" : "음소거"}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 print-eyebrow text-white hover:bg-white/10 transition-colors"
+              className={`inline-flex items-center gap-1.5 px-3 py-2.5 print-eyebrow transition-colors ${
+                soundBlocked && muted
+                  ? "bg-[#FCF686] text-[#1D3C63] font-bold hover:bg-white"
+                  : "text-white hover:bg-white/10"
+              }`}
             >
-              {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-[#FCF686]" />}
-              <span className="hidden sm:inline">{muted ? "MUTE" : "SOUND"}</span>
+              {muted ? (
+                <VolumeX className="w-3.5 h-3.5" />
+              ) : (
+                <Volume2 className="w-3.5 h-3.5 text-[#FCF686]" />
+              )}
+              <span className="hidden sm:inline">
+                {soundBlocked && muted ? "TAP FOR SOUND" : muted ? "MUTE" : "SOUND"}
+              </span>
             </button>
             <button
               type="button"
