@@ -24,15 +24,18 @@ type FrameThemeKey =
 
 type FilterKey = "original" | "soft" | "bw" | "warm";
 
+type ShowKey = "dinoz" | "semokkeut";
+
 type ProfileCategory =
   | "dinoz-cast"
   | "dinoz-perf"
-  | "semo-cast"
   | "dinoz-team"
+  | "semo-cast"
   | "semo-team";
 
 interface ProfileOption {
   id: string;
+  show: ShowKey;
   category: ProfileCategory;
   groupLabel: string;
   role: string;
@@ -43,6 +46,7 @@ interface ProfileOption {
 
 interface FrameTheme {
   key: FrameThemeKey;
+  show: ShowKey | "common";
   label: string;
   subtitle: string;
   swatchA: string;
@@ -65,6 +69,7 @@ interface FrameTheme {
 const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
   "dinoz-film": {
     key: "dinoz-film",
+    show: "dinoz",
     label: "DINOZ · 다크 필름",
     subtitle: "IDOL FILM BLACK · CYAN",
     swatchA: "#0B0D12",
@@ -85,6 +90,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
   },
   "dinoz-cosmic": {
     key: "dinoz-cosmic",
+    show: "dinoz",
     label: "DINOZ · 코스믹 네이비",
     subtitle: "SPACE NAVY · LEMON",
     swatchA: "#112442",
@@ -105,6 +111,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
   },
   "semo-pastel": {
     key: "semo-pastel",
+    show: "semokkeut",
     label: "세모끝 · 파스텔 동화",
     subtitle: "BLUSH PINK · BUTTER CREAM",
     swatchA: "#FADCE4",
@@ -124,6 +131,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
   },
   "semo-midnight": {
     key: "semo-midnight",
+    show: "semokkeut",
     label: "세모끝 · 미드나잇 골드",
     subtitle: "TWILIGHT INK · ANTIQUE GOLD",
     swatchA: "#1D1714",
@@ -143,6 +151,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
   },
   "muborn-yellow": {
     key: "muborn-yellow",
+    show: "common",
     label: "MU:BORN · 2026 옐로우",
     subtitle: "LEMON YELLOW · NAVY",
     swatchA: "#FCF686",
@@ -169,17 +178,40 @@ const FILTERS: Array<{ key: FilterKey; label: string; css: string }> = [
   { key: "bw", label: "흑백 필름", css: "grayscale(1) contrast(1.12) brightness(1.03)" },
 ];
 
-const PROFILE_TABS: Array<{ key: ProfileCategory; label: string }> = [
-  { key: "dinoz-cast", label: "다이노즈 캐스트" },
-  { key: "dinoz-perf", label: "퍼포머" },
-  { key: "semo-cast", label: "세모끝 캐스트" },
-  { key: "dinoz-team", label: "다이노즈 창작진" },
-  { key: "semo-team", label: "세모끝 창작진" },
+const SHOW_TABS: Array<{
+  key: ShowKey;
+  label: string;
+  en: string;
+  defaultCategory: ProfileCategory;
+  categories: Array<{ key: ProfileCategory; label: string }>;
+}> = [
+  {
+    key: "dinoz",
+    label: "다이노즈",
+    en: "DINOZ",
+    defaultCategory: "dinoz-cast",
+    categories: [
+      { key: "dinoz-cast", label: "캐스트" },
+      { key: "dinoz-perf", label: "퍼포머" },
+      { key: "dinoz-team", label: "창작진" },
+    ],
+  },
+  {
+    key: "semokkeut",
+    label: "세상 모든 이야기의 끝",
+    en: "SEMOKKEUT",
+    defaultCategory: "semo-cast",
+    categories: [
+      { key: "semo-cast", label: "캐스트" },
+      { key: "semo-team", label: "창작진" },
+    ],
+  },
 ];
 
 const ALL_PROFILES: ProfileOption[] = [
   ...mediaManifest.dinozCast.map((p) => ({
     id: `dc-${p.order}`,
+    show: "dinoz" as ShowKey,
     category: "dinoz-cast" as ProfileCategory,
     groupLabel: "다이노즈",
     role: `${p.role} 役`,
@@ -189,6 +221,7 @@ const ALL_PROFILES: ProfileOption[] = [
   })),
   ...mediaManifest.dinozPerformers.map((p) => ({
     id: `dp-${p.order}`,
+    show: "dinoz" as ShowKey,
     category: "dinoz-perf" as ProfileCategory,
     groupLabel: "다이노즈",
     role: "Performer",
@@ -196,17 +229,9 @@ const ALL_PROFILES: ProfileOption[] = [
     image: p.image,
     noPhoto: (p as { noPhoto?: boolean }).noPhoto,
   })),
-  ...mediaManifest.semokkeutCast.map((p) => ({
-    id: `sc-${p.order}`,
-    category: "semo-cast" as ProfileCategory,
-    groupLabel: "세모끝",
-    role: `${p.role} 役`,
-    name: p.name,
-    image: p.image,
-    noPhoto: (p as { noPhoto?: boolean }).noPhoto,
-  })),
   ...mediaManifest.dinozCreative.map((p) => ({
     id: `dt-${p.order}`,
+    show: "dinoz" as ShowKey,
     category: "dinoz-team" as ProfileCategory,
     groupLabel: "다이노즈 창작진",
     role: p.role,
@@ -214,8 +239,19 @@ const ALL_PROFILES: ProfileOption[] = [
     image: p.image,
     noPhoto: (p as { noPhoto?: boolean }).noPhoto,
   })),
+  ...mediaManifest.semokkeutCast.map((p) => ({
+    id: `sc-${p.order}`,
+    show: "semokkeut" as ShowKey,
+    category: "semo-cast" as ProfileCategory,
+    groupLabel: "세모끝",
+    role: `${p.role} 役`,
+    name: p.name,
+    image: p.image,
+    noPhoto: (p as { noPhoto?: boolean }).noPhoto,
+  })),
   ...mediaManifest.semokkeutCreative.map((p) => ({
     id: `st-${p.order}`,
+    show: "semokkeut" as ShowKey,
     category: "semo-team" as ProfileCategory,
     groupLabel: "세모끝 창작진",
     role: p.role,
@@ -319,18 +355,30 @@ function drawMiniBarcode(
 export default function PhotoboothPage() {
   const [searchParams] = useSearchParams();
   const initialIdolImg = searchParams.get("idol");
+  const requestedFrame = mapInitialFrame(searchParams.get("frame"));
+  const requestedShow = FRAME_THEMES[requestedFrame].show;
   const initialPartner =
     ALL_PROFILES.find((p) => p.image === initialIdolImg && !p.noPhoto) ||
+    (requestedShow !== "common"
+      ? ALL_PROFILES.find((p) => p.show === requestedShow && !p.noPhoto)
+      : undefined) ||
     ALL_PROFILES.find((p) => !p.noPhoto) ||
     ALL_PROFILES[0];
 
-  const [themeKey, setThemeKey] = useState<FrameThemeKey>(
-    mapInitialFrame(searchParams.get("frame"))
-  );
-  const [filterKey, setFilterKey] = useState<FilterKey>("soft");
+  const initialTheme: FrameThemeKey =
+    FRAME_THEMES[requestedFrame].show === "common" ||
+    FRAME_THEMES[requestedFrame].show === initialPartner.show
+      ? requestedFrame
+      : initialPartner.show === "semokkeut"
+      ? "semo-pastel"
+      : "dinoz-film";
+
   const [partner, setPartner] = useState<ProfileOption>(initialPartner);
+  const [showTab, setShowTab] = useState<ShowKey>(initialPartner.show);
   const [profileTab, setProfileTab] = useState<ProfileCategory>(initialPartner.category);
   const [profileSearch, setProfileSearch] = useState("");
+  const [themeKey, setThemeKey] = useState<FrameThemeKey>(initialTheme);
+  const [filterKey, setFilterKey] = useState<FilterKey>("soft");
   const [isSample, setIsSample] = useState(false);
   const [userPhotos, setUserPhotos] = useState<(string | null)[]>([
     null,
@@ -345,6 +393,27 @@ export default function PhotoboothPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [cameraError, setCameraError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const activeShowConfig =
+    SHOW_TABS.find((s) => s.key === showTab) || SHOW_TABS[0];
+
+  const availableThemes = useMemo(
+    () =>
+      Object.values(FRAME_THEMES).filter(
+        (t) => t.show === partner.show || t.show === "common"
+      ),
+    [partner.show]
+  );
+
+  const handleSelectPartner = (p: ProfileOption) => {
+    setPartner(p);
+    setShowTab(p.show);
+    setProfileTab(p.category);
+    const currentThemeShow = FRAME_THEMES[themeKey].show;
+    if (currentThemeShow !== "common" && currentThemeShow !== p.show) {
+      setThemeKey(p.show === "semokkeut" ? "semo-pastel" : "dinoz-film");
+    }
+  };
 
   const filteredProfiles = useMemo(() => {
     const q = profileSearch.trim().toLowerCase();
@@ -433,7 +502,7 @@ export default function PhotoboothPage() {
       reader.onload = () => {
         const result = String(reader.result || "");
         setIsSample(false);
-    setUserPhotos((prev) => {
+        setUserPhotos((prev) => {
           const next = [...prev];
           const target = singleIndex !== undefined ? singleIndex : idx;
           if (target < 4) next[target] = result;
@@ -449,17 +518,17 @@ export default function PhotoboothPage() {
     const isSemo = themeKey.startsWith("semo");
     const sample = isSemo
       ? [
-          "/media/cast/semokkeut-01.webp",
-          "/media/cast/semokkeut-02.webp",
-          "/media/cast/semokkeut-03.webp",
-          "/media/posters/semokkeut.webp",
-        ]
+        "/media/cast/semokkeut-01.webp",
+        "/media/cast/semokkeut-02.webp",
+        "/media/cast/semokkeut-03.webp",
+        "/media/posters/semokkeut.webp",
+      ]
       : [
-          "/media/cast/dinoz-01.webp",
-          "/media/cast/dinoz-02.webp",
-          "/media/cast/dinoz-03.webp",
-          "/media/cast/dinoz-04.webp",
-        ];
+        "/media/cast/dinoz-01.webp",
+        "/media/cast/dinoz-02.webp",
+        "/media/cast/dinoz-03.webp",
+        "/media/cast/dinoz-04.webp",
+      ];
     setIsSample(true);
     setUserPhotos(sample);
   };
@@ -689,8 +758,8 @@ export default function PhotoboothPage() {
             theme.style === "pastel"
               ? "#FFFDF9"
               : theme.style === "muborn"
-              ? "#FAF9F4"
-              : "#192136";
+                ? "#FAF9F4"
+                : "#192136";
           ctx.fillRect(padX, y, halfW, frameH);
           ctx.fillStyle = theme.accent;
           ctx.font = "bold 17px sans-serif";
@@ -805,27 +874,173 @@ export default function PhotoboothPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Controls Column */}
         <div className="lg:col-span-7 space-y-6">
-          {/* 01. Frame Theme Picker */}
+          {/* 01. Partner Picker (Grouped by Show: DINOZ vs SEMOKKEUT) */}
+          <div className="bg-white border border-[#1D3C63]/16 p-6 sm:p-7 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b print-rule">
+              <div className="flex items-center gap-2.5">
+                <span className="print-num text-xs font-bold text-[#1D3C63]">01</span>
+                <h2 className="text-sm font-bold text-[#1D3C63] flex items-center gap-1.5">
+                  <Users className="w-4 h-4" />
+                  함께 찍을 프로필 선택 ({ALL_PROFILES.length}명)
+                </h2>
+              </div>
+              <span className="print-eyebrow text-[#1D3C63]/45">STEP 01 · PROFILE</span>
+            </div>
+
+            <div className="space-y-4">
+              {/* Show Tabs: 다이노즈 / 세상 모든 이야기의 끝 */}
+              <div className="grid grid-cols-2 border border-[#1D3C63]/20">
+                {SHOW_TABS.map((s, idx) => {
+                  const isActiveShow = showTab === s.key && !profileSearch;
+                  const count = ALL_PROFILES.filter((p) => p.show === s.key).length;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => {
+                        setShowTab(s.key);
+                        setProfileTab(s.defaultCategory);
+                        setProfileSearch("");
+                      }}
+                      className={`px-4 py-3 text-left transition-colors ${
+                        idx === 0 ? "border-r border-[#1D3C63]/20" : ""
+                      } ${
+                        isActiveShow
+                          ? "bg-[#1D3C63] text-[#FCF686]"
+                          : "bg-[#FAF9F4] text-[#1D3C63]/75 hover:bg-white"
+                      }`}
+                    >
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs sm:text-sm font-bold truncate">
+                          {s.label}
+                        </span>
+                        <span className="print-num text-[10px] opacity-65 shrink-0">
+                          {count}명
+                        </span>
+                      </div>
+                      <div className="print-eyebrow text-[9.5px] opacity-60 mt-0.5">
+                        {s.en}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sub-category Tabs (for selected show) + Search */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {activeShowConfig.categories.map((c) => {
+                    const cCount = ALL_PROFILES.filter((p) => p.category === c.key).length;
+                    return (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => {
+                          setProfileTab(c.key);
+                          setProfileSearch("");
+                        }}
+                        className={`px-3 py-1.5 text-[11.5px] border transition-colors ${
+                          profileTab === c.key && !profileSearch
+                            ? "bg-[#FCF686] border-[#1D3C63] text-[#1D3C63] font-bold"
+                            : "bg-white border-[#1D3C63]/16 text-[#1D3C63]/75 hover:border-[#1D3C63]"
+                        }`}
+                      >
+                        {c.label}{" "}
+                        <span className="print-num opacity-60">{cCount}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="relative w-full sm:w-44 shrink-0">
+                  <Search className="w-3.5 h-3.5 text-[#1D3C63]/45 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={profileSearch}
+                    onChange={(e) => setProfileSearch(e.target.value)}
+                    placeholder="전체 이름/파트 검색"
+                    className="w-full pl-8 pr-2.5 py-1.5 border border-[#1D3C63]/20 text-xs focus:outline-none focus:border-[#1D3C63]"
+                  />
+                </div>
+              </div>
+
+              {/* Selected Partner Banner */}
+              <div className="px-3.5 py-2 bg-[#FAF9F4] border-l-2 border-[#1D3C63] flex items-center justify-between text-xs">
+                <span>
+                  선택된 프로필:{" "}
+                  <strong className="text-[#1D3C63]">
+                    [{partner.groupLabel}] {partner.role} {partner.name}
+                  </strong>
+                </span>
+                <span className="print-num text-[#1D3C63]/50">
+                  {filteredProfiles.length}명 표시 중
+                </span>
+              </div>
+
+              {/* Profile Grid */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto pr-1">
+                {filteredProfiles.map((p) => {
+                  const active = partner.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleSelectPartner(p)}
+                      disabled={p.noPhoto}
+                      title={p.noPhoto ? "프로필 촬영 전" : undefined}
+                      className={`overflow-hidden border text-left transition-all ${
+                        p.noPhoto
+                          ? "border-[#1D3C63]/10 opacity-35 grayscale cursor-not-allowed"
+                          : active
+                          ? "border-[#1D3C63] ring-2 ring-[#1D3C63]"
+                          : "border-[#1D3C63]/15 opacity-80 hover:opacity-100"
+                      }`}
+                    >
+                      <img
+                        src={p.image}
+                        alt={`${p.role} ${p.name}`}
+                        loading="lazy"
+                        className="w-full aspect-square object-cover object-top"
+                      />
+                      <div
+                        className={`p-1.5 leading-tight ${
+                          active ? "bg-[#1D3C63] text-[#FCF686]" : "bg-[#FAF9F4] text-[#1D3C63]"
+                        }`}
+                      >
+                        <div className="text-[9px] opacity-75 truncate">{p.role}</div>
+                        <div className="text-[11px] font-bold truncate">{p.name}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 02. Frame Theme Picker (Filtered to Selected Profile's Show + MU:BORN Common) */}
           <div className="bg-white border border-[#1D3C63]/16 p-6 sm:p-7 space-y-5">
             <div className="flex items-center justify-between pb-3 border-b print-rule">
               <div className="flex items-center gap-2.5">
-                <span className="print-num text-xs font-bold text-[#1D3C63]">01</span>
-                <h2 className="text-sm font-bold text-[#1D3C63]">프레임 테마 &amp; 필름 필터</h2>
+                <span className="print-num text-xs font-bold text-[#1D3C63]">02</span>
+                <h2 className="text-sm font-bold text-[#1D3C63]">
+                  {partner.show === "dinoz" ? "다이노즈" : "세상 모든 이야기의 끝"} 프레임 테마 &amp; 필름 필터
+                </h2>
               </div>
-              <span className="print-eyebrow text-[#1D3C63]/45">5 EDITIONS</span>
+              <span className="print-eyebrow text-[#1D3C63]/45">
+                {availableThemes.length} EDITIONS
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 border-t border-l border-[#1D3C63]/16">
-              {Object.values(FRAME_THEMES).map((t) => (
+            <div className="grid grid-cols-1 sm:grid-cols-3 border-t border-l border-[#1D3C63]/16">
+              {availableThemes.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setThemeKey(t.key)}
-                  className={`p-3.5 border-r border-b border-[#1D3C63]/16 text-left transition-colors ${
-                    themeKey === t.key
-                      ? "bg-[#FCF686]/50 ring-2 ring-inset ring-[#1D3C63]"
-                      : "bg-white hover:bg-[#FAF9F4]"
-                  }`}
+                  className={`p-3.5 border-r border-b border-[#1D3C63]/16 text-left transition-colors ${themeKey === t.key
+                    ? "bg-[#FCF686]/50 ring-2 ring-inset ring-[#1D3C63]"
+                    : "bg-white hover:bg-[#FAF9F4]"
+                    }`}
                 >
                   <div className="flex items-center gap-1.5 mb-2">
                     <span
@@ -853,116 +1068,15 @@ export default function PhotoboothPage() {
                   key={f.key}
                   type="button"
                   onClick={() => setFilterKey(f.key)}
-                  className={`px-3 py-1.5 text-xs border transition-colors ${
-                    filterKey === f.key
-                      ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686] font-bold"
-                      : "bg-white border-[#1D3C63]/20 text-[#1D3C63]/75 hover:border-[#1D3C63]"
-                  }`}
+                  className={`px-3 py-1.5 text-xs border transition-colors ${filterKey === f.key
+                    ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686] font-bold"
+                    : "bg-white border-[#1D3C63]/20 text-[#1D3C63]/75 hover:border-[#1D3C63]"
+                    }`}
                 >
                   {f.label}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* 02. Partner Picker (ALL Cast + Performers + ALL 91 Creative Team Members!) */}
-          <div className="bg-white border border-[#1D3C63]/16 p-6 sm:p-7 space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b print-rule">
-              <div className="flex items-center gap-2.5">
-                <span className="print-num text-xs font-bold text-[#1D3C63]">02</span>
-                <h2 className="text-sm font-bold text-[#1D3C63] flex items-center gap-1.5">
-                  <Users className="w-4 h-4" />
-                  함께 찍을 프로필 선택 ({ALL_PROFILES.length}명)
-                </h2>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-                {/* Category Tabs + Search */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-1.5">
-                    {PROFILE_TABS.map((t) => (
-                      <button
-                        key={t.key}
-                        type="button"
-                        onClick={() => {
-                          setProfileTab(t.key);
-                          setProfileSearch("");
-                        }}
-                        className={`px-2.5 py-1.5 text-[11.5px] border transition-colors ${
-                          profileTab === t.key && !profileSearch
-                            ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686] font-bold"
-                            : "bg-[#FAF9F4] border-[#1D3C63]/16 text-[#1D3C63]/75 hover:border-[#1D3C63]"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="relative w-full sm:w-44 shrink-0">
-                    <Search className="w-3.5 h-3.5 text-[#1D3C63]/45 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={profileSearch}
-                      onChange={(e) => setProfileSearch(e.target.value)}
-                      placeholder="이름/파트 검색"
-                      className="w-full pl-8 pr-2.5 py-1.5 border border-[#1D3C63]/20 text-xs focus:outline-none focus:border-[#1D3C63]"
-                    />
-                  </div>
-                </div>
-
-                {/* Selected Partner Banner */}
-                <div className="px-3.5 py-2 bg-[#FAF9F4] border-l-2 border-[#1D3C63] flex items-center justify-between text-xs">
-                  <span>
-                    선택된 프로필:{" "}
-                    <strong className="text-[#1D3C63]">
-                      [{partner.groupLabel}] {partner.role} {partner.name}
-                    </strong>
-                  </span>
-                  <span className="print-num text-[#1D3C63]/50">
-                    {filteredProfiles.length}명 표시 중
-                  </span>
-                </div>
-
-                {/* Profile Grid */}
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto pr-1">
-                  {filteredProfiles.map((p) => {
-                    const active = partner.id === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setPartner(p)}
-                        disabled={p.noPhoto}
-                        title={p.noPhoto ? "프로필 촬영 전" : undefined}
-                        className={`overflow-hidden border text-left transition-all ${
-                          p.noPhoto
-                            ? "border-[#1D3C63]/10 opacity-35 grayscale cursor-not-allowed"
-                            : active
-                            ? "border-[#1D3C63] ring-2 ring-[#1D3C63]"
-                            : "border-[#1D3C63]/15 opacity-80 hover:opacity-100"
-                        }`}
-                      >
-                        <img
-                          src={p.image}
-                          alt={`${p.role} ${p.name}`}
-                          loading="lazy"
-                          className="w-full aspect-square object-cover object-top"
-                        />
-                        <div
-                          className={`p-1.5 leading-tight ${
-                            active ? "bg-[#1D3C63] text-[#FCF686]" : "bg-[#FAF9F4] text-[#1D3C63]"
-                          }`}
-                        >
-                          <div className="text-[9px] opacity-75 truncate">{p.role}</div>
-                          <div className="text-[11px] font-bold truncate">{p.name}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
           </div>
 
           {/* 03. Capture / Upload */}
@@ -1116,14 +1230,14 @@ export default function PhotoboothPage() {
               미리보기 샘플입니다. 직접 촬영하거나 사진을 올리면 저장할 수 있어요.
             </p>
           ) : (
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="w-full max-w-[344px] py-4 bg-[#1D3C63] hover:bg-[#132A47] text-[#FCF686] font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            <span>고화질 4컷 이미지 저장하기</span>
-          </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="w-full max-w-[344px] py-4 bg-[#1D3C63] hover:bg-[#132A47] text-[#FCF686] font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>고화질 4컷 이미지 저장하기</span>
+            </button>
           )}
         </div>
       </div>
