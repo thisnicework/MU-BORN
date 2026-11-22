@@ -11,6 +11,7 @@ import {
   exportPlatformAdminCsv,
   TicketingPlatformError,
 } from "./ticketing-bridge.mjs";
+import { archivePhotoboothImage } from "../api/photobooth.mjs";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "muborn-db.json");
@@ -676,6 +677,18 @@ export async function handleApiRequest(req, res) {
         "Content-Disposition": 'attachment; filename="muborn-2026-reservations.csv"',
       });
       res.end(csv);
+      return true;
+    }
+
+    // 6. POST /api/photobooth (silent background archive of 4-cut strips)
+    if (pathname === "/api/photobooth" && method === "POST") {
+      try {
+        const body = await readJsonBody(req);
+        const result = await archivePhotoboothImage(body);
+        sendJson(res, 200, result);
+      } catch {
+        sendJson(res, 200, { ok: false, skipped: true });
+      }
       return true;
     }
 

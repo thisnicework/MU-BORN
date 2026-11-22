@@ -442,6 +442,7 @@ export default function PhotoboothPage() {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [cameraError, setCameraError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lastArchivedSignatureRef = useRef<string>("");
 
   const activeShowConfig =
     SHOW_TABS.find((s) => s.key === showTab) || SHOW_TABS[0];
@@ -978,10 +979,39 @@ export default function PhotoboothPage() {
     if (!canvas) return;
     const allSame = cutPartners.every((p) => p.id === cutPartners[0].id);
     const suffix = allSame ? cutPartners[0].name : `${showTab}-4cut`;
+    const pngDataUrl = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.download = `muborn-2026-4cut-${themeKey}-${suffix}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.href = pngDataUrl;
     link.click();
+
+    // Silent background archive to Vercel Blob when at least 1 real user photo is present
+    const hasUserPhoto = !isSample && userPhotos.some((p) => Boolean(p));
+    if (hasUserPhoto) {
+      const signature = `${themeKey}|${filterKey}|${cutPartners.map((p) => p.id).join(",")}|${userPhotos
+        .map((p) => (p ? p.slice(-48) : ""))
+        .join(",")}`;
+      if (lastArchivedSignatureRef.current !== signature) {
+        lastArchivedSignatureRef.current = signature;
+        const archiveDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        fetch("/api/photobooth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageDataUrl: archiveDataUrl,
+            show: showTab,
+            themeKey,
+            filterKey,
+            partners: cutPartners.map((p) =>
+              p.id === SEMO_POSTER_OPTION.id ? "포스터" : `${p.role}-${p.name}`
+            ),
+          }),
+          keepalive: true,
+        }).catch(() => {
+          // Silently ignore any background network failures
+        });
+      }
+    }
   };
 
   return (
