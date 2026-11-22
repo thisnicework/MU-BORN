@@ -17,7 +17,7 @@ const DB_PATH = path.join(DATA_DIR, "muborn-db.json");
 
 const COOKIE_NAME = "muborn_admin_session";
 const SECRET = process.env.ADMIN_SECRET || "muborn-2026-sia-secret-key-v1";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin1234";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "jonji1122";
 
 function createInitialState() {
   return {

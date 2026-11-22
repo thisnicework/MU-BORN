@@ -7,7 +7,7 @@ function getAdminConfig() {
   loadLocalEnv();
   return {
     secret: process.env.ADMIN_SECRET || "muborn-2026-sia-secret-key-v1",
-    password: process.env.ADMIN_PASSWORD || "admin1234",
+    password: process.env.ADMIN_PASSWORD || "jonji1122",
   };
 }
 
