@@ -115,7 +115,7 @@ export default function SemokkeutPage() {
                   className="inline-flex items-center gap-2 px-5 py-3.5 border border-[#1D3C63] hover:bg-[#FCF686] text-[#1D3C63] font-bold text-sm transition-colors"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>포토이즘 프레임</span>
+                  <span>뮤본네컷</span>
                 </Link>
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function SemokkeutPage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1D3C63] text-[#FCF686] text-xs font-bold"
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>포토이즘</span>
+                <span>뮤본네컷</span>
               </Link>
             </div>
           </div>

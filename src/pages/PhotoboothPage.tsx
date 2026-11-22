@@ -85,7 +85,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
     secondaryLogoSrc: LOGOS.dinozKrWhite,
     sideText: "KEEP YOURSELF ALIVE · DINOZ EARTH CONQUEST · 2026 MU:BORN",
     footerLeft: "DINOZ OFFICIAL FRAME",
-    footerRight: "MU:BORN × PHOTOISM",
+    footerRight: "MU:BORN × 4CUT",
     style: "film",
   },
   "dinoz-cosmic": {
@@ -126,7 +126,7 @@ const FRAME_THEMES: Record<FrameThemeKey, FrameTheme> = {
     logoSrc: LOGOS.semokkeutBlack,
     sideText: "THE END OF EVERY STORY · FAIRY TALE · 2026 MU:BORN",
     footerLeft: "세상 모든 이야기의 끝",
-    footerRight: "MU:BORN × PHOTOISM",
+    footerRight: "MU:BORN × 4CUT",
     style: "pastel",
   },
   "semo-midnight": {
@@ -352,30 +352,79 @@ function drawMiniBarcode(
   ctx.restore();
 }
 
+type PartnerMode = "per-cut" | "single";
+
+const SEMO_POSTER_OPTION: ProfileOption = {
+  id: "semo-poster",
+  show: "semokkeut",
+  category: "semo-cast",
+  groupLabel: "세모끝",
+  role: "POSTER",
+  name: "세상 모든 이야기의 끝",
+  image: "/media/posters/semokkeut.webp",
+};
+
+function getDefaultCutPartners(
+  show: ShowKey
+): [ProfileOption, ProfileOption, ProfileOption, ProfileOption] {
+  if (show === "semokkeut") {
+    const cast = ALL_PROFILES.filter((p) => p.category === "semo-cast");
+    return [
+      cast[0] || SEMO_POSTER_OPTION,
+      cast[1] || cast[0] || SEMO_POSTER_OPTION,
+      cast[2] || cast[0] || SEMO_POSTER_OPTION,
+      SEMO_POSTER_OPTION,
+    ];
+  }
+  const cast = ALL_PROFILES.filter((p) => p.category === "dinoz-cast");
+  return [
+    cast[0] || ALL_PROFILES[0],
+    cast[1] || cast[0] || ALL_PROFILES[0],
+    cast[2] || cast[0] || ALL_PROFILES[0],
+    cast[3] || cast[0] || ALL_PROFILES[0],
+  ];
+}
+
 export default function PhotoboothPage() {
   const [searchParams] = useSearchParams();
   const initialIdolImg = searchParams.get("idol");
   const requestedFrame = mapInitialFrame(searchParams.get("frame"));
   const requestedShow = FRAME_THEMES[requestedFrame].show;
-  const initialPartner =
-    ALL_PROFILES.find((p) => p.image === initialIdolImg && !p.noPhoto) ||
-    (requestedShow !== "common"
-      ? ALL_PROFILES.find((p) => p.show === requestedShow && !p.noPhoto)
-      : undefined) ||
-    ALL_PROFILES.find((p) => !p.noPhoto) ||
-    ALL_PROFILES[0];
+  const matchedIdol = initialIdolImg
+    ? ALL_PROFILES.find((p) => p.image === initialIdolImg && !p.noPhoto)
+    : undefined;
+
+  const initialShow: ShowKey = matchedIdol
+    ? matchedIdol.show
+    : requestedShow === "semokkeut"
+      ? "semokkeut"
+      : "dinoz";
+
+  const initialMode: PartnerMode = matchedIdol ? "single" : "per-cut";
+  const initialCuts: [ProfileOption, ProfileOption, ProfileOption, ProfileOption] = matchedIdol
+    ? [matchedIdol, matchedIdol, matchedIdol, matchedIdol]
+    : getDefaultCutPartners(initialShow);
 
   const initialTheme: FrameThemeKey =
     FRAME_THEMES[requestedFrame].show === "common" ||
-      FRAME_THEMES[requestedFrame].show === initialPartner.show
+      FRAME_THEMES[requestedFrame].show === initialShow
       ? requestedFrame
-      : initialPartner.show === "semokkeut"
+      : initialShow === "semokkeut"
         ? "semo-pastel"
         : "dinoz-film";
 
-  const [partner, setPartner] = useState<ProfileOption>(initialPartner);
-  const [showTab, setShowTab] = useState<ShowKey>(initialPartner.show);
-  const [profileTab, setProfileTab] = useState<ProfileCategory>(initialPartner.category);
+  const [partnerMode, setPartnerMode] = useState<PartnerMode>(initialMode);
+  const [cutPartners, setCutPartners] =
+    useState<[ProfileOption, ProfileOption, ProfileOption, ProfileOption]>(initialCuts);
+  const [activeCutIdx, setActiveCutIdx] = useState<number>(0);
+  const [showTab, setShowTab] = useState<ShowKey>(initialShow);
+  const [profileTab, setProfileTab] = useState<ProfileCategory>(
+    matchedIdol
+      ? matchedIdol.category
+      : initialShow === "semokkeut"
+        ? "semo-cast"
+        : "dinoz-cast"
+  );
   const [profileSearch, setProfileSearch] = useState("");
   const [themeKey, setThemeKey] = useState<FrameThemeKey>(initialTheme);
   const [filterKey, setFilterKey] = useState<FilterKey>("soft");
@@ -400,22 +449,25 @@ export default function PhotoboothPage() {
   const availableThemes = useMemo(
     () =>
       Object.values(FRAME_THEMES).filter(
-        (t) => t.show === partner.show || t.show === "common"
+        (t) => t.show === showTab || t.show === "common"
       ),
-    [partner.show]
+    [showTab]
   );
 
   const handleSelectShow = (show: (typeof SHOW_TABS)[number]) => {
     setShowTab(show.key);
     setProfileTab(show.defaultCategory);
     setProfileSearch("");
+    setActiveCutIdx(0);
 
-    if (partner.show !== show.key) {
+    if (partnerMode === "per-cut") {
+      setCutPartners(getDefaultCutPartners(show.key));
+    } else {
       const firstOfShow = ALL_PROFILES.find(
         (p) => p.show === show.key && !p.noPhoto
       );
       if (firstOfShow) {
-        setPartner(firstOfShow);
+        setCutPartners([firstOfShow, firstOfShow, firstOfShow, firstOfShow]);
       }
     }
 
@@ -425,8 +477,40 @@ export default function PhotoboothPage() {
     }
   };
 
+  const handleSwitchMode = (nextMode: PartnerMode) => {
+    setPartnerMode(nextMode);
+    if (nextMode === "per-cut") {
+      const allSame = cutPartners.every((p) => p.id === cutPartners[0].id);
+      if (allSame) {
+        setCutPartners(getDefaultCutPartners(showTab));
+      }
+      setActiveCutIdx(0);
+    } else {
+      const base =
+        cutPartners[activeCutIdx]?.id === SEMO_POSTER_OPTION.id
+          ? cutPartners[0]
+          : cutPartners[activeCutIdx] || cutPartners[0];
+      setCutPartners([base, base, base, base]);
+    }
+  };
+
   const handleSelectPartner = (p: ProfileOption) => {
-    setPartner(p);
+    if (partnerMode === "per-cut") {
+      setCutPartners((prev) => {
+        const next = [...prev] as [
+          ProfileOption,
+          ProfileOption,
+          ProfileOption,
+          ProfileOption,
+        ];
+        next[activeCutIdx] = p;
+        return next;
+      });
+      setActiveCutIdx((prev) => (prev + 1) % 4);
+    } else {
+      setCutPartners([p, p, p, p]);
+    }
+
     setShowTab(p.show);
     setProfileTab(p.category);
     const currentThemeShow = FRAME_THEMES[themeKey].show;
@@ -445,8 +529,12 @@ export default function PhotoboothPage() {
           p.groupLabel.toLowerCase().includes(q)
       );
     }
-    return ALL_PROFILES.filter((p) => p.category === profileTab);
-  }, [profileTab, profileSearch]);
+    const base = ALL_PROFILES.filter((p) => p.category === profileTab);
+    if (profileTab === "semo-cast" && partnerMode === "per-cut") {
+      return [...base, SEMO_POSTER_OPTION];
+    }
+    return base;
+  }, [profileTab, profileSearch, partnerMode]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -716,18 +804,24 @@ export default function PhotoboothPage() {
         ctx.fillText("MU:BORN 2026", W / 2, 74);
       }
 
-      // 4. Load Partner Image
-      let loadedPartner: HTMLImageElement | null = null;
-      if (partner?.image) {
-        try {
-          loadedPartner = await loadImage(partner.image);
-        } catch {
-          loadedPartner = null;
-        }
-      }
+      // 4. Load Partner Images (per-cut individual profiles supported!)
+      const imageCache = new Map<string, HTMLImageElement>();
+      const uniqueUrls = Array.from(new Set(cutPartners.map((p) => p.image).filter(Boolean)));
+      await Promise.all(
+        uniqueUrls.map(async (url) => {
+          try {
+            const img = await loadImage(url);
+            imageCache.set(url, img);
+          } catch {
+            // ignore broken image
+          }
+        })
+      );
       if (cancelled) return;
 
-      // 5. Render 4 Cuts (with subtle pose/zoom variety per cut like real Photoism!)
+      const allSamePartner = cutPartners.every((p) => p.id === cutPartners[0].id);
+
+      // 5. Render 4 Cuts (per-cut individual cast or single-partner zoom variation!)
       const padX = 44;
       const frameW = W - padX * 2; // 552
       const frameH = 382;
@@ -743,6 +837,8 @@ export default function PhotoboothPage() {
 
       for (let i = 0; i < 4; i++) {
         const y = startY + i * (frameH + gapY);
+        const cutPartner = cutPartners[i];
+        const loadedPartner = imageCache.get(cutPartner.image) || null;
 
         ctx.save();
         // Optional subtle rounded corners for pastel frame
@@ -791,10 +887,16 @@ export default function PhotoboothPage() {
           ctx.filter = filterCss;
         }
 
-        // Right half: Cast / Creative Team Profile Photo with per-cut zoom variation
+        // Right half: Individual Cut Profile Photo
         if (loadedPartner) {
-          const v = partnerVariants[i];
-          drawCover(ctx, loadedPartner, padX + halfW, y, halfW, frameH, v.bias, v.zoom);
+          if (cutPartner.id === SEMO_POSTER_OPTION.id) {
+            drawCover(ctx, loadedPartner, padX + halfW, y, halfW, frameH, 0.45, 1.0);
+          } else if (allSamePartner) {
+            const v = partnerVariants[i];
+            drawCover(ctx, loadedPartner, padX + halfW, y, halfW, frameH, v.bias, v.zoom);
+          } else {
+            drawCover(ctx, loadedPartner, padX + halfW, y, halfW, frameH, 0.14, 1.04);
+          }
         }
 
         // Soft seam divider
@@ -802,9 +904,14 @@ export default function PhotoboothPage() {
         ctx.fillStyle = theme.bgTop;
         ctx.fillRect(padX + halfW - 1.5, y, 3, frameH);
 
-        // Tiny subtle stamp inside Cut 4 bottom-right (partner signature tag!)
-        if (i === 3) {
-          const tagText = `WITH. ${partner.role} ${partner.name}`;
+        // Subtle name tag inside each cut (for per-cut cast) or Cut 4 only (for single partner)
+        if (!allSamePartner || i === 3) {
+          const tagText =
+            cutPartner.id === SEMO_POSTER_OPTION.id
+              ? cutPartner.name
+              : allSamePartner
+                ? `WITH. ${cutPartner.role} ${cutPartner.name}`
+                : `${cutPartner.role} ${cutPartner.name}`;
           ctx.font = "bold 11px sans-serif";
           const tw = ctx.measureText(tagText).width + 20;
           ctx.fillStyle = "rgba(17, 36, 66, 0.78)";
@@ -830,7 +937,7 @@ export default function PhotoboothPage() {
         ctx.restore();
       }
 
-      // 6. Bottom Photoism Colophon Footer (matching reference!)
+      // 6. Bottom MU:BORN 4-Cut Colophon Footer
       const footY = 1796;
       ctx.strokeStyle = theme.frameBorder;
       ctx.lineWidth = 1;
@@ -839,19 +946,19 @@ export default function PhotoboothPage() {
       ctx.lineTo(W - padX, footY);
       ctx.stroke();
 
-      // Left: Footer title & partner name
+      // Left: Footer title & partner summary
       ctx.textAlign = "left";
       ctx.fillStyle = theme.accent;
       ctx.font = "bold 14px sans-serif";
       ctx.fillText(theme.footerLeft, padX, footY + 32);
 
+      const footerPartnerLine = allSamePartner
+        ? `WITH ${cutPartners[0].role} ${cutPartners[0].name} · @sia.bfa.muborn`
+        : `WITH ${showTab === "dinoz" ? "DINOZ" : "세모끝"} 4-CUT · @sia.bfa.muborn`;
+
       ctx.fillStyle = theme.mutedText;
       ctx.font = "500 11px sans-serif";
-      ctx.fillText(
-        `WITH ${partner.role} ${partner.name} · @sia.bfa.muborn`,
-        padX,
-        footY + 54
-      );
+      ctx.fillText(footerPartnerLine, padX, footY + 54);
 
       // Right: Barcode + date stamp
       drawMiniBarcode(ctx, W - padX - 88, footY + 18, 22, theme.accent);
@@ -864,13 +971,15 @@ export default function PhotoboothPage() {
     return () => {
       cancelled = true;
     };
-  }, [themeKey, filterKey, partner, userPhotos]);
+  }, [themeKey, filterKey, cutPartners, showTab, userPhotos]);
 
   const handleDownload = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const allSame = cutPartners.every((p) => p.id === cutPartners[0].id);
+    const suffix = allSame ? cutPartners[0].name : `${showTab}-4cut`;
     const link = document.createElement("a");
-    link.download = `muborn-2026-photoism-${themeKey}-${partner.name}.png`;
+    link.download = `muborn-2026-4cut-${themeKey}-${suffix}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
@@ -879,13 +988,13 @@ export default function PhotoboothPage() {
     <div className="pt-16 md:pt-[68px] min-h-screen bg-[#FAF9F4] text-[#1D3C63]">
       <section className="bg-[#FCF686] py-14 sm:py-18 border-b border-[#1D3C63]/16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <SectionFolio index="00" title="MU:BORN PHOTOISM" meta="CAST & CREATIVE TEAM · 103 PROFILES" />
+          <SectionFolio index="00" title="MU:BORN 4-CUT" meta="CAST & CREATIVE TEAM · 103 PROFILES" />
           <div className="space-y-2">
             <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1D3C63] print-display">
-              MU:BORN 4컷 포토이즘 프레임
+              뮤본네컷 프레임
             </h1>
             <p className="text-sm text-[#1D3C63]/75">
-              &lt;다이노즈&gt;·&lt;세상 모든 이야기의 끝&gt; 전 배우·퍼포머·창작진 프로필과 함께 나만의 4컷을 촬영하거나 업로드해 저장하세요.
+              &lt;다이노즈&gt;·&lt;세상 모든 이야기의 끝&gt; 배우와 창작진을 컷마다 개별로 배치하거나 원하는 1인을 선택해 나만의 4컷을 저장하세요.
             </p>
           </div>
         </div>
@@ -894,7 +1003,7 @@ export default function PhotoboothPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Controls Column */}
         <div className="lg:col-span-7 space-y-6">
-          {/* 01. Partner Picker (Grouped by Show: DINOZ vs SEMOKKEUT) */}
+          {/* 01. Partner Picker (Grouped by Show: DINOZ vs SEMOKKEUT, Per-Cut Individual or Single) */}
           <div className="bg-white border border-[#1D3C63]/16 p-6 sm:p-7 space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b print-rule">
               <div className="flex items-center gap-2.5">
@@ -904,7 +1013,30 @@ export default function PhotoboothPage() {
                   함께 찍을 프로필 선택 ({ALL_PROFILES.length}명)
                 </h2>
               </div>
-              <span className="print-eyebrow text-[#1D3C63]/45">STEP 01 · PROFILE</span>
+
+              {/* Per-Cut Individual vs Single Person Mode Toggle */}
+              <div className="inline-flex border border-[#1D3C63]/20 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode("per-cut")}
+                  className={`px-2.5 py-1 transition-colors ${partnerMode === "per-cut"
+                    ? "bg-[#1D3C63] text-[#FCF686] font-bold"
+                    : "bg-[#FAF9F4] text-[#1D3C63]/70 hover:bg-white"
+                    }`}
+                >
+                  컷별 개별 배치
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode("single")}
+                  className={`px-2.5 py-1 border-l border-[#1D3C63]/20 transition-colors ${partnerMode === "single"
+                    ? "bg-[#1D3C63] text-[#FCF686] font-bold"
+                    : "bg-[#FAF9F4] text-[#1D3C63]/70 hover:bg-white"
+                    }`}
+                >
+                  1인 4컷 고정
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -939,6 +1071,59 @@ export default function PhotoboothPage() {
                   );
                 })}
               </div>
+
+              {/* 4-Cut Slot Selector Strip (Per-Cut Mode) */}
+              {partnerMode === "per-cut" && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-[#1D3C63]/65">
+                    <span>
+                      바꿀 컷을 선택한 뒤 아래에서 프로필을 눌러주세요 (현재{" "}
+                      <strong className="text-[#1D3C63]">CUT 0{activeCutIdx + 1}</strong> 편집 중)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCutPartners(getDefaultCutPartners(showTab));
+                        setActiveCutIdx(0);
+                      }}
+                      className="text-[11px] font-bold text-[#1D3C63] underline underline-offset-2 hover:opacity-75 shrink-0"
+                    >
+                      배우 전원 기본배치
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    {cutPartners.map((cp, idx) => {
+                      const isEditing = activeCutIdx === idx;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveCutIdx(idx)}
+                          className={`p-1.5 border text-left transition-all flex items-center gap-2 ${isEditing
+                            ? "bg-[#FCF686]/65 border-[#1D3C63] ring-1 ring-[#1D3C63]"
+                            : "bg-[#FAF9F4] border-[#1D3C63]/16 hover:border-[#1D3C63]/50"
+                            }`}
+                        >
+                          <img
+                            src={cp.image}
+                            alt={cp.name}
+                            className="w-8 h-8 object-cover object-top shrink-0 border border-[#1D3C63]/15"
+                          />
+                          <div className="min-w-0 leading-tight">
+                            <div className="print-num text-[9px] font-bold text-[#1D3C63]/55">
+                              CUT 0{idx + 1}
+                            </div>
+                            <div className="text-[11px] font-bold text-[#1D3C63] truncate">
+                              {cp.id === SEMO_POSTER_OPTION.id ? "포스터" : cp.name}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Sub-category Tabs (for selected show) + Search */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -978,22 +1163,43 @@ export default function PhotoboothPage() {
               </div>
 
               {/* Selected Partner Banner */}
-              <div className="px-3.5 py-2 bg-[#FAF9F4] border-l-2 border-[#1D3C63] flex items-center justify-between text-xs">
-                <span>
-                  선택된 프로필:{" "}
-                  <strong className="text-[#1D3C63]">
-                    [{partner.groupLabel}] {partner.role} {partner.name}
-                  </strong>
+              <div className="px-3.5 py-2 bg-[#FAF9F4] border-l-2 border-[#1D3C63] flex items-center justify-between text-xs gap-2">
+                <span className="truncate">
+                  {partnerMode === "per-cut" ? (
+                    <>
+                      현재 4컷 구성:{" "}
+                      <strong className="text-[#1D3C63]">
+                        {cutPartners
+                          .map((cp) =>
+                            cp.id === SEMO_POSTER_OPTION.id ? "포스터" : cp.name
+                          )
+                          .join(" · ")}
+                      </strong>
+                    </>
+                  ) : (
+                    <>
+                      선택된 프로필:{" "}
+                      <strong className="text-[#1D3C63]">
+                        [{cutPartners[0].groupLabel}] {cutPartners[0].role} {cutPartners[0].name}
+                      </strong>
+                    </>
+                  )}
                 </span>
-                <span className="print-num text-[#1D3C63]/50">
-                  {filteredProfiles.length}명 표시 중
+                <span className="print-num text-[#1D3C63]/50 shrink-0">
+                  {filteredProfiles.length}개 표시 중
                 </span>
               </div>
 
               {/* Profile Grid */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-64 overflow-y-auto pr-1">
                 {filteredProfiles.map((p) => {
-                  const active = partner.id === p.id;
+                  const active =
+                    partnerMode === "per-cut"
+                      ? cutPartners[activeCutIdx]?.id === p.id
+                      : cutPartners[0]?.id === p.id;
+                  const assignedCutNums = cutPartners
+                    .map((cp, idx) => (cp.id === p.id ? idx + 1 : null))
+                    .filter((n): n is number => n !== null);
                   return (
                     <button
                       key={p.id}
@@ -1001,13 +1207,20 @@ export default function PhotoboothPage() {
                       onClick={() => handleSelectPartner(p)}
                       disabled={p.noPhoto}
                       title={p.noPhoto ? "프로필 촬영 전" : undefined}
-                      className={`overflow-hidden border text-left transition-all ${p.noPhoto
+                      className={`relative overflow-hidden border text-left transition-all ${p.noPhoto
                         ? "border-[#1D3C63]/10 opacity-35 grayscale cursor-not-allowed"
                         : active
                           ? "border-[#1D3C63] ring-2 ring-[#1D3C63]"
-                          : "border-[#1D3C63]/15 opacity-80 hover:opacity-100"
+                          : assignedCutNums.length > 0 && partnerMode === "per-cut"
+                            ? "border-[#1D3C63]/65 opacity-100"
+                            : "border-[#1D3C63]/15 opacity-80 hover:opacity-100"
                         }`}
                     >
+                      {partnerMode === "per-cut" && assignedCutNums.length > 0 && (
+                        <span className="absolute top-1 left-1 z-10 px-1.5 py-0.5 bg-[#1D3C63] text-[#FCF686] print-num text-[9px] font-bold">
+                          {assignedCutNums.map((n) => `0${n}`).join("·")}
+                        </span>
+                      )}
                       <img
                         src={p.image}
                         alt={`${p.role} ${p.name}`}
@@ -1034,7 +1247,7 @@ export default function PhotoboothPage() {
               <div className="flex items-center gap-2.5">
                 <span className="print-num text-xs font-bold text-[#1D3C63]">02</span>
                 <h2 className="text-sm font-bold text-[#1D3C63]">
-                  {partner.show === "dinoz" ? "다이노즈" : "세상 모든 이야기의 끝"} 프레임 테마 &amp; 필름 필터
+                  {showTab === "dinoz" ? "다이노즈" : "세상 모든 이야기의 끝"} 프레임 테마 &amp; 필름 필터
                 </h2>
               </div>
               <span className="print-eyebrow text-[#1D3C63]/45">

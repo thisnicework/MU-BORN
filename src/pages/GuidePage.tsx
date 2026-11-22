@@ -195,7 +195,7 @@ export default function GuidePage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-3 border border-white/30 hover:bg-white/10 text-white font-semibold text-xs"
               >
-                <Instagram className="w-3.5 h-3.5" />
+                <Instagram className="w-4 h-4" />
                 <span>@sia.bfa.muborn</span>
               </a>
             </div>

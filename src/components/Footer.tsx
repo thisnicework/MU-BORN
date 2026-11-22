@@ -25,7 +25,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#FCF686] text-[#1D3C63] text-xs font-bold tracking-wide hover:bg-white transition-colors"
             >
-              <Instagram className="w-3.5 h-3.5" />
+              <Instagram className="w-4 h-4" />
               <span>@sia.bfa.muborn</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
             </a>
@@ -41,7 +41,7 @@ export default function Footer() {
                 ["/works/semokkeut", "창작뮤지컬 <세상 모든 이야기의 끝>"],
                 ["/tickets", "티켓 예매 · 조회"],
                 ["/creative-team", "CREATIVE TEAM"],
-                ["/photobooth", "포토이즘 프레임"],
+                ["/photobooth", "뮤본네컷"],
               ].map(([href, label]) => (
                 <li key={href}>
                   <Link to={href} className="hover:text-[#FCF686] transition-colors">

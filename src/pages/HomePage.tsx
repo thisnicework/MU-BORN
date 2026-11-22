@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Instagram, ExternalLink } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import HeroVideo from "@/components/HeroVideo";
-import { DINOZ_WORK, SEMOKKEUT_WORK, SPONSORS } from "@/data/content";
+import { DINOZ_WORK, SEMOKKEUT_WORK } from "@/data/content";
 import { LOGOS } from "@/data/logos";
 import {
   TapedCalendar,
@@ -9,7 +9,6 @@ import {
   BarcodeSvg,
   SectionFolio,
   ClawGripper,
-  FloatingStars,
 } from "@/components/CuteArt";
 
 export default function HomePage() {
@@ -323,113 +322,6 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. CHAPTER 03: PHOTOISM SPECIAL BAND */}
-      <section className="py-16 sm:py-20 bg-[#1D3C63] text-white relative overflow-hidden">
-        <div className="hidden lg:block absolute top-14 right-14 pointer-events-none opacity-80">
-          <FloatingStars className="w-24 h-20" dark />
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 relative">
-          <SectionFolio index="03" title="SPECIAL EDITION · PHOTOISM" meta="4-CUT FRAME" dark />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-end">
-            <div className="lg:col-span-8 space-y-3">
-              <h2 className="text-2xl sm:text-4xl font-bold text-[#FCF686]">
-                배우 프로필과 함께 찍는 4컷 포토이즘 프레임
-              </h2>
-              <p className="text-[14.5px] text-white/75 print-measure leading-[1.8]">
-                &lt;다이노즈&gt;, &lt;세상 모든 이야기의 끝&gt;, MU:BORN 2026 시그니처 프레임으로 웹캠 촬영 또는 사진 업로드를 통해 나만의 4컷 이미지를 바로 저장하실 수 있습니다.
-              </p>
-            </div>
-            <div className="lg:col-span-4 flex lg:justify-end">
-              <Link
-                to="/photobooth"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#FCF686] hover:bg-white text-[#1D3C63] font-bold text-sm transition-colors"
-              >
-                <span>포토이즘 프레임 만들기</span>
-                <ArrowUpRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. CHAPTER 04: OFFICIAL SPONSORS + INSTAGRAM */}
-      <section className="py-24 sm:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-14">
-          <SectionFolio index="04" title="OFFICIAL SPONSORS" meta="PARTNERS / P.04" />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 border-t border-l border-[#1D3C63]/16">
-            {SPONSORS.map((sp) => (
-              <div
-                key={sp.id}
-                className="p-7 sm:p-10 border-r border-b border-[#1D3C63]/16 bg-[#FAF9F4]/60 flex flex-col justify-between gap-7"
-              >
-                <div className="flex items-center justify-between gap-4 pb-5 border-b print-rule">
-                  <img src={sp.logo} alt={sp.name} className="h-8 sm:h-9 w-auto object-contain" />
-                  <span className="text-xs font-medium text-[#1D3C63]/55">{sp.slogan}</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-start">
-                  <div className="sm:col-span-5">
-                    <img
-                      src={sp.productImage}
-                      alt={sp.productName}
-                      className="w-full aspect-square object-cover bg-white border border-[#1D3C63]/10"
-                    />
-                  </div>
-                  <div className="sm:col-span-7 space-y-3">
-                    <h3 className="text-[15.5px] font-bold text-[#1D3C63] leading-[1.4]">
-                      {sp.productName}
-                    </h3>
-                    {"productSlogan" in sp && sp.productSlogan && (
-                      <p className="text-[13px] font-semibold text-[#1D3C63]/80">
-                        {sp.productSlogan}
-                      </p>
-                    )}
-                    <div className="space-y-2 text-[13.5px] text-[#1D3C63]/75 leading-[1.8]">
-                      {sp.description.map((p, idx) => (
-                        <p key={idx}>{p}</p>
-                      ))}
-                    </div>
-                    {"website" in sp && sp.website && (
-                      <a
-                        href={sp.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-bold text-[#1D3C63] hover:underline pt-1"
-                      >
-                        <span>공식 홈페이지</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Editorial Instagram Strip */}
-          <div className="bg-[#FCF686] p-7 sm:p-9 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-[#1D3C63] text-[#FCF686] flex items-center justify-center shrink-0">
-                <Instagram className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="print-eyebrow text-[#1D3C63]/55">OFFICIAL CHANNEL</div>
-                <div className="font-display font-bold text-lg text-[#1D3C63]">@sia.bfa.muborn</div>
-              </div>
-            </div>
-            <a
-              href="https://www.instagram.com/sia.bfa.muborn/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group shrink-0"
-            >
-              <FollowArrowBadge label="Follow the arrow" />
-            </a>
           </div>
         </div>
       </section>

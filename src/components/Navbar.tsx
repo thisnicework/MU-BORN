@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: "/works/semokkeut", label: "세상 모든 이야기의 끝" },
   { href: "/creative-team", label: "CREATIVE TEAM" },
   { href: "/guide", label: "GUIDE" },
-  { href: "/photobooth", label: "PHOTOISM" },
+  { href: "/photobooth", label: "뮤본네컷" },
 ];
 
 export default function Navbar() {
@@ -96,7 +96,7 @@ export default function Navbar() {
               isDark ? "text-white/75 hover:text-[#FCF686]" : "text-[#1D3C63]/70 hover:text-[#1D3C63]"
             }`}
           >
-            <Instagram className="w-[18px] h-[18px]" />
+            <Instagram className="w-[22px] h-[22px]" />
           </a>
 
           <button
@@ -142,7 +142,7 @@ export default function Navbar() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-[#FCF686]"
               >
-                <Instagram className="w-4 h-4" />
+                <Instagram className="w-[18px] h-[18px]" />
                 @sia.bfa.muborn
               </a>
               <Link

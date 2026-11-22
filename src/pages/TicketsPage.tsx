@@ -759,7 +759,7 @@ export default function TicketsPage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-semibold text-[#1D3C63]/70 hover:text-[#1D3C63]"
                   >
-                    <Instagram className="w-3.5 h-3.5" />
+                    <Instagram className="w-4 h-4" />
                     @sia.bfa.muborn
                   </a>
                 </div>

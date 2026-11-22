@@ -6,7 +6,7 @@ import { DINOZ_WORK, SEMOKKEUT_WORK } from "@/data/content";
 import { LOGOS } from "@/data/logos";
 import { SectionFolio } from "@/components/CuteArt";
 
-type TabKey = "dinoz" | "semokkeut" | "credits";
+type TabKey = "dinoz" | "semokkeut" | "advisors" | "credits";
 
 interface TeamMember {
   order: number;
@@ -14,6 +14,16 @@ interface TeamMember {
   name: string;
   image: string;
 }
+
+const ADVISORS: TeamMember[] = mediaManifest.dinozCreative.filter(
+  (m) => m.role === "지도교수"
+);
+const DINOZ_STAFF: TeamMember[] = mediaManifest.dinozCreative.filter(
+  (m) => m.role !== "지도교수"
+);
+const SEMOKKEUT_STAFF: TeamMember[] = mediaManifest.semokkeutCreative.filter(
+  (m) => m.role !== "지도교수"
+);
 
 const DEPT_FILTERS = [
   { key: "ALL", label: "전체" },
@@ -24,7 +34,6 @@ const DEPT_FILTERS = [
   { key: "비주얼", label: "의상·분장·사진·디자인·SW" },
   { key: "홍보영상", label: "홍보영상" },
   { key: "세션", label: "세션" },
-  { key: "지도교수", label: "지도교수" },
 ];
 
 function matchDept(role: string, filterKey: string): boolean {
@@ -52,7 +61,6 @@ function matchDept(role: string, filterKey: string): boolean {
     );
   if (filterKey === "홍보영상") return role.includes("홍보영상");
   if (filterKey === "세션") return role.includes("세션");
-  if (filterKey === "지도교수") return role.includes("지도교수");
   return true;
 }
 
@@ -60,7 +68,7 @@ export default function CreativeTeamPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as TabKey) || "dinoz";
   const [tab, setTab] = useState<TabKey>(
-    ["dinoz", "semokkeut", "credits"].includes(initialTab) ? initialTab : "dinoz"
+    ["dinoz", "semokkeut", "advisors", "credits"].includes(initialTab) ? initialTab : "dinoz"
   );
   const [dept, setDept] = useState("ALL");
   const [query, setQuery] = useState("");
@@ -74,7 +82,7 @@ export default function CreativeTeamPage() {
   };
 
   const list: TeamMember[] =
-    tab === "dinoz" ? mediaManifest.dinozCreative : mediaManifest.semokkeutCreative;
+    tab === "dinoz" ? DINOZ_STAFF : tab === "semokkeut" ? SEMOKKEUT_STAFF : ADVISORS;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,20 +120,21 @@ export default function CreativeTeamPage() {
       {/* Editorial Underline Tab Bar */}
       <div className="sticky top-16 md:top-[68px] z-30 bg-white/95 backdrop-blur-md border-b border-[#1D3C63]/16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5 sm:gap-6 overflow-x-auto">
             {[
-              { key: "dinoz" as TabKey, label: `다이노즈 (${mediaManifest.dinozCreative.length})` },
+              { key: "dinoz" as TabKey, label: `다이노즈 (${DINOZ_STAFF.length})` },
               {
                 key: "semokkeut" as TabKey,
-                label: `세상 모든 이야기의 끝 (${mediaManifest.semokkeutCreative.length})`,
+                label: `세상 모든 이야기의 끝 (${SEMOKKEUT_STAFF.length})`,
               },
+              { key: "advisors" as TabKey, label: `지도교수 (${ADVISORS.length})` },
               { key: "credits" as TabKey, label: "전체 CREDIT" },
             ].map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => switchTab(item.key)}
-                className={`relative py-4 text-xs sm:text-sm transition-colors ${tab === item.key
+                className={`relative py-4 text-xs sm:text-sm whitespace-nowrap transition-colors ${tab === item.key
                   ? "text-[#1D3C63] font-bold"
                   : "text-[#1D3C63]/55 hover:text-[#1D3C63] font-medium"
                   }`}
@@ -138,7 +147,7 @@ export default function CreativeTeamPage() {
             ))}
           </div>
 
-          {tab !== "credits" && (
+          {(tab === "dinoz" || tab === "semokkeut") && (
             <div className="relative w-full sm:w-60 py-2">
               <Search className="w-3.5 h-3.5 text-[#1D3C63]/45 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -155,7 +164,46 @@ export default function CreativeTeamPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-        {tab !== "credits" ? (
+        {tab === "advisors" ? (
+          <div className="space-y-12">
+            <div className="pb-6 border-b border-[#1D3C63]/16 space-y-2">
+              <span className="print-eyebrow text-[#1D3C63]/50">
+                ADVISING PROFESSORS · 2026 MU:BORN
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1D3C63] print-display">
+                지도교수
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-11 max-w-4xl">
+              {ADVISORS.map((member) => (
+                <button
+                  key={`advisor-${member.order}-${member.name}`}
+                  type="button"
+                  onClick={() => setSelected(member)}
+                  className="group text-left focus:outline-none"
+                >
+                  <div className="aspect-[4/4.6] w-full overflow-hidden bg-neutral-200 border border-[#1D3C63]/12">
+                    <img
+                      src={member.image}
+                      alt={`${member.role} ${member.name}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]"
+                    />
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-[#1D3C63]/16 flex items-baseline justify-between gap-2">
+                    <span className="text-xs text-[#1D3C63]/60 font-medium truncate">
+                      {member.role}
+                    </span>
+                    <span className="text-[16px] font-bold text-[#1D3C63] shrink-0">
+                      {member.name}
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : tab !== "credits" ? (
           <div className="space-y-12">
             {/* Title + Dept Filter Bar */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-[#1D3C63]/16">
@@ -222,6 +270,19 @@ export default function CreativeTeamPage() {
           </div>
         ) : (
           <div className="space-y-16">
+            {/* Highlighted Advising Professors Band */}
+            <div className="bg-[#FCF686] border border-[#1D3C63]/20 p-7 sm:p-9 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <span className="print-eyebrow text-[#1D3C63]/60">
+                  ADVISING PROFESSORS · 2026 MU:BORN
+                </span>
+                <h3 className="text-lg sm:text-xl font-extrabold text-[#1D3C63]">지도교수</h3>
+              </div>
+              <div className="text-base sm:text-lg font-bold text-[#1D3C63] tracking-wide">
+                이유리 · 우진하 · 신은경
+              </div>
+            </div>
+
             <div className="bg-[#4A4A4A] text-white border border-[#1D3C63]/16">
               <img
                 src={DINOZ_WORK.creditImage}
@@ -231,14 +292,16 @@ export default function CreativeTeamPage() {
               <div className="p-7 sm:p-11 bg-[#1D3C63]">
                 <h3 className="print-eyebrow text-[#FCF686] mb-6">DINOZ — FULL CREDITS</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-2.5 text-[13.5px] leading-[1.65]">
-                  {DINOZ_WORK.credits.map((c) => (
-                    <div key={c.role} className="grid grid-cols-12 gap-3 py-1.5 border-b border-white/10">
-                      <span className="col-span-5 text-right font-semibold text-white/95 pr-1">
-                        {c.role}
-                      </span>
-                      <span className="col-span-7 text-white/75">{c.names}</span>
-                    </div>
-                  ))}
+                  {DINOZ_WORK.credits
+                    .filter((c) => c.role !== "지도교수")
+                    .map((c) => (
+                      <div key={c.role} className="grid grid-cols-12 gap-3 py-1.5 border-b border-white/10">
+                        <span className="col-span-5 text-right font-semibold text-white/95 pr-1">
+                          {c.role}
+                        </span>
+                        <span className="col-span-7 text-white/75">{c.names}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -254,14 +317,16 @@ export default function CreativeTeamPage() {
                   THE END OF EVERY STORY — FULL CREDITS
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-2.5 text-[13.5px] leading-[1.65]">
-                  {SEMOKKEUT_WORK.credits.map((c) => (
-                    <div key={c.role} className="grid grid-cols-12 gap-3 py-1.5 border-b border-white/10">
-                      <span className="col-span-5 text-right font-semibold text-white/95 pr-1">
-                        {c.role}
-                      </span>
-                      <span className="col-span-7 text-white/75">{c.names}</span>
-                    </div>
-                  ))}
+                  {SEMOKKEUT_WORK.credits
+                    .filter((c) => c.role !== "지도교수")
+                    .map((c) => (
+                      <div key={c.role} className="grid grid-cols-12 gap-3 py-1.5 border-b border-white/10">
+                        <span className="col-span-5 text-right font-semibold text-white/95 pr-1">
+                          {c.role}
+                        </span>
+                        <span className="col-span-7 text-white/75">{c.names}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>

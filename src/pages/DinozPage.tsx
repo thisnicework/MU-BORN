@@ -375,7 +375,7 @@ export default function DinozPage() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FCF686] text-[#1D3C63] text-xs font-bold"
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>포토이즘</span>
+                <span>뮤본네컷</span>
               </Link>
             </div>
           </div>
