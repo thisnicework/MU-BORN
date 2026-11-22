@@ -5,8 +5,6 @@ import {
   Download,
   RefreshCw,
   Search,
-  ToggleLeft,
-  ToggleRight,
   Edit3,
   Check,
 } from "lucide-react";
@@ -270,7 +268,7 @@ export default function AdminPage() {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold">티켓 통합 관리자</h1>
               <p className="text-xs text-white/65 mt-1">
-                회차별 최대 수량 · 잔여 수량 확인 / 현장 수령 체크인 / 예매 오픈 제어
+                회차별 최대 수량 · 잔여 수량 확인 / 현장 수령 체크인 / 예매자 명단 관리
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -374,34 +372,6 @@ export default function AdminPage() {
                       {show.venue} · 오픈 예정 {show.open_at}
                     </p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      patchAdmin({
-                        action: "toggle_show",
-                        showId: show.id,
-                        isOpen: show.is_open !== 1,
-                      })
-                    }
-                    className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold border transition-colors ${
-                      show.is_open
-                        ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
-                        : "border-[#1D3C63] bg-[#1D3C63] text-[#FCF686]"
-                    }`}
-                  >
-                    {show.is_open ? (
-                      <>
-                        <ToggleRight className="w-4 h-4" />
-                        <span>예매 닫기</span>
-                      </>
-                    ) : (
-                      <>
-                        <ToggleLeft className="w-4 h-4" />
-                        <span>예매 오픈하기</span>
-                      </>
-                    )}
-                  </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 border-t border-l border-[#1D3C63]/16">
