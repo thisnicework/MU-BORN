@@ -173,26 +173,28 @@ export default function HeroVideo() {
                 </p>
               </div>
 
-              <div className="lg:col-span-5 flex flex-wrap lg:justify-end gap-2.5">
+              <div className="lg:col-span-5 flex flex-col lg:flex-row lg:flex-wrap lg:justify-end items-start lg:items-center gap-2.5">
                 <Link
                   to="/tickets?show=dinoz"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#FCF686] hover:bg-white text-[#1D3C63] font-bold text-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#FCF686] hover:bg-white text-[#1D3C63] font-bold text-sm transition-colors whitespace-nowrap"
                 >
                   <span>티켓 예매하기</span>
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
-                <Link
-                  to="/works/dinoz"
-                  className="px-5 py-3.5 border border-white/35 hover:bg-white/15 text-white text-sm font-medium backdrop-blur-xs transition-colors"
-                >
-                  다이노즈
-                </Link>
-                <Link
-                  to="/works/semokkeut"
-                  className="px-5 py-3.5 border border-white/35 hover:bg-white/15 text-white text-sm font-medium backdrop-blur-xs transition-colors"
-                >
-                  세상 모든 이야기의 끝
-                </Link>
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    to="/works/dinoz"
+                    className="px-5 py-3.5 border border-white/35 hover:bg-white/15 text-white text-sm font-medium backdrop-blur-xs transition-colors whitespace-nowrap"
+                  >
+                    다이노즈
+                  </Link>
+                  <Link
+                    to="/works/semokkeut"
+                    className="px-5 py-3.5 border border-white/35 hover:bg-white/15 text-white text-sm font-medium backdrop-blur-xs transition-colors whitespace-nowrap"
+                  >
+                    세상 모든 이야기의 끝
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
