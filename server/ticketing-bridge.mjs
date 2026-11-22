@@ -351,8 +351,8 @@ export async function createPlatformReservations(body) {
 
   const normalizedPhone = normalizePhone(digits);
   const phoneLast4 = digits.slice(-4);
-  const createdTickets = [];
 
+  // Validate all selected schedules exist first
   for (const scheduleId of sessionIds) {
     const sMeta = scheduleMetaById.get(scheduleId);
     if (!sMeta) {
@@ -366,6 +366,120 @@ export async function createPlatformReservations(body) {
         `${sMeta.label}에 예매 가능한 티켓 권종이 없습니다.`
       );
     }
+  }
+
+  // Prevent duplicate reservation by the same phone number on the same schedule/time
+  if (cfg.adminEnabled) {
+    try {
+      const adminClient = createPlatformAdminClient();
+      const existingReservations = await fetchAllPlatformReservations(adminClient);
+      for (const scheduleId of sessionIds) {
+        const sMeta = scheduleMetaById.get(scheduleId);
+        const targetStartsAtMs = sMeta?.schedule?.startsAt
+          ? new Date(sMeta.schedule.startsAt).getTime()
+          : null;
+
+        const duplicate = existingReservations.find((r) => {
+          const rDigits = String(r.customerPhone || "").replace(/\D/g, "");
+          if (rDigits !== digits) return false;
+          if (r.scheduleId === scheduleId) return true;
+          if (targetStartsAtMs !== null && r.scheduleStartsAt) {
+            return new Date(r.scheduleStartsAt).getTime() === targetStartsAtMs;
+          }
+          return false;
+        });
+
+        if (duplicate) {
+          throw new TicketingPlatformError(
+            409,
+            "DUPLICATE_RESERVATION",
+            `입력하신 전화번호로 이미 해당 회차(${sMeta.label} · ${sMeta.dateStr} ${sMeta.timeStr})에 예매된 내역이 있습니다. (회차당 1인 1매 제한)`
+          );
+        }
+      }
+    } catch (err) {
+      if (err instanceof TicketingPlatformError && err.code === "DUPLICATE_RESERVATION") {
+        throw err;
+      }
+      // Fallback to public lookup by name + phone if admin list fails
+      try {
+        const lookedUp = await client.reservations.lookup({
+          customerPhone: normalizedPhone,
+          customerName: name,
+        });
+        const list = Array.isArray(lookedUp?.reservations) ? lookedUp.reservations : [];
+        for (const scheduleId of sessionIds) {
+          const sMeta = scheduleMetaById.get(scheduleId);
+          const targetStartsAtMs = sMeta?.schedule?.startsAt
+            ? new Date(sMeta.schedule.startsAt).getTime()
+            : null;
+          const dup = list.find(
+            (r) =>
+              r.schedule?.id === scheduleId ||
+              (targetStartsAtMs !== null &&
+                r.schedule?.startsAt &&
+                new Date(r.schedule.startsAt).getTime() === targetStartsAtMs)
+          );
+          if (dup) {
+            throw new TicketingPlatformError(
+              409,
+              "DUPLICATE_RESERVATION",
+              `입력하신 전화번호로 이미 해당 회차(${sMeta.label} · ${sMeta.dateStr} ${sMeta.timeStr})에 예매된 내역이 있습니다. (회차당 1인 1매 제한)`
+            );
+          }
+        }
+      } catch (lookupErr) {
+        if (
+          lookupErr instanceof TicketingPlatformError &&
+          lookupErr.code === "DUPLICATE_RESERVATION"
+        ) {
+          throw lookupErr;
+        }
+      }
+    }
+  } else {
+    // Public lookup check when admin key is not present
+    try {
+      const lookedUp = await client.reservations.lookup({
+        customerPhone: normalizedPhone,
+        customerName: name,
+      });
+      const list = Array.isArray(lookedUp?.reservations) ? lookedUp.reservations : [];
+      for (const scheduleId of sessionIds) {
+        const sMeta = scheduleMetaById.get(scheduleId);
+        const targetStartsAtMs = sMeta?.schedule?.startsAt
+          ? new Date(sMeta.schedule.startsAt).getTime()
+          : null;
+        const dup = list.find(
+          (r) =>
+            r.schedule?.id === scheduleId ||
+            (targetStartsAtMs !== null &&
+              r.schedule?.startsAt &&
+              new Date(r.schedule.startsAt).getTime() === targetStartsAtMs)
+        );
+        if (dup) {
+          throw new TicketingPlatformError(
+            409,
+            "DUPLICATE_RESERVATION",
+            `입력하신 전화번호로 이미 해당 회차(${sMeta.label} · ${sMeta.dateStr} ${sMeta.timeStr})에 예매된 내역이 있습니다. (회차당 1인 1매 제한)`
+          );
+        }
+      }
+    } catch (lookupErr) {
+      if (
+        lookupErr instanceof TicketingPlatformError &&
+        lookupErr.code === "DUPLICATE_RESERVATION"
+      ) {
+        throw lookupErr;
+      }
+    }
+  }
+
+  const createdTickets = [];
+
+  for (const scheduleId of sessionIds) {
+    const sMeta = scheduleMetaById.get(scheduleId);
+    const ticketTypeId = String(ticketTypeMap[scheduleId] || sMeta.defaultTicketTypeId || "").trim();
 
     const result = await client.reservations.create({
       scheduleId,

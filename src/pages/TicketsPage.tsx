@@ -202,7 +202,12 @@ export default function TicketsPage() {
       const data = await res.json();
       if (!res.ok) {
         setConfirmModal(false);
-        setError(data.error || "예매에 실패했습니다.");
+        const msg = data.error || "예매에 실패했습니다.";
+        setError(msg);
+        window.scrollTo({ top: 240, behavior: "smooth" });
+        if (data.code === "DUPLICATE_RESERVATION") {
+          window.alert(msg);
+        }
         await fetchShows();
         return;
       }
