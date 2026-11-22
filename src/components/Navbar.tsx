@@ -74,10 +74,10 @@ export default function Navbar() {
         </nav>
 
         {/* Right Utility Block */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <Link
             to="/tickets"
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-display font-bold tracking-[0.14em] uppercase transition-colors ${
+            className={`h-9 inline-flex items-center justify-center gap-1.5 px-4 text-xs font-display font-bold tracking-[0.14em] uppercase transition-colors ${
               isDark
                 ? "bg-[#FCF686] text-[#1D3C63] hover:bg-white"
                 : "bg-[#1D3C63] text-[#FCF686] hover:bg-[#132A47]"
@@ -92,11 +92,13 @@ export default function Navbar() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="MU:BORN 공식 인스타그램"
-            className={`p-2 transition-colors ${
-              isDark ? "text-white/75 hover:text-[#FCF686]" : "text-[#1D3C63]/70 hover:text-[#1D3C63]"
+            className={`h-9 w-9 inline-flex items-center justify-center border transition-colors ${
+              isDark
+                ? "border-white/25 text-white/85 hover:border-[#FCF686] hover:text-[#FCF686]"
+                : "border-[#1D3C63]/25 text-[#1D3C63]/80 hover:border-[#1D3C63] hover:text-[#1D3C63]"
             }`}
           >
-            <Instagram className="w-[22px] h-[22px]" />
+            <Instagram className="w-[20px] h-[20px]" />
           </a>
 
           <button

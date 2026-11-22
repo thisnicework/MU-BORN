@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Lock, ArrowUpRight } from "lucide-react";
+import { Instagram, ArrowUpRight } from "lucide-react";
 import { LOGOS } from "@/data/logos";
 
 export default function Footer() {
@@ -80,16 +80,7 @@ export default function Footer() {
 
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11.5px] text-white/45 print-num">
           <div>© 2026 SEOUL INSTITUTE OF THE ARTS · MU:BORN.</div>
-          <div className="flex items-center gap-5">
-            <span>INQUIRY · @sia.bfa.muborn</span>
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1 hover:text-white transition-colors"
-            >
-              <Lock className="w-3 h-3" />
-              <span>ADMIN</span>
-            </Link>
-          </div>
+          <div>INQUIRY · @sia.bfa.muborn</div>
         </div>
       </div>
     </footer>

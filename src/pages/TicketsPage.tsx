@@ -27,13 +27,19 @@ interface PublicSession {
   dateStr: string;
   timeStr: string;
   isSoldOut: boolean;
+  ticketTypeId?: string | null;
+  ticketTypeName?: string;
+  salesStatus?: "open" | "upcoming" | "closed";
 }
 
 interface PublicShow {
   id: string;
+  eventId?: string;
   title: string;
   openAt: string;
   isOpen: boolean;
+  pendingSchedules?: boolean;
+  loadError?: string;
   venue: string;
   sessions: PublicSession[];
 }
@@ -50,7 +56,7 @@ interface CreatedTicket {
 }
 
 interface LookupRow {
-  id: number;
+  id: number | string;
   booking_code: string;
   show_id: string;
   show_title: string;
@@ -62,6 +68,7 @@ interface LookupRow {
   phone_last4: string;
   checked_in: number;
   created_at: string;
+  can_cancel?: boolean;
 }
 
 function formatPhoneInput(raw: string): string {
@@ -90,7 +97,9 @@ export default function TicketsPage() {
   const [confirmModal, setConfirmModal] = useState(false);
   const [createdTickets, setCreatedTickets] = useState<CreatedTicket[] | null>(null);
 
+  const [lookupBy, setLookupBy] = useState<"name" | "code">("name");
   const [lookupName, setLookupName] = useState("");
+  const [lookupCode, setLookupCode] = useState("");
   const [lookupPhone, setLookupPhone] = useState("");
   const [lookupResults, setLookupResults] = useState<LookupRow[] | null>(null);
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -100,11 +109,17 @@ export default function TicketsPage() {
     try {
       setLoadingShows(true);
       const res = await fetch("/api/shows", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed");
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "공연 정보를 불러오지 못했습니다.");
+      }
       setShows(data.shows || []);
-    } catch {
-      setError("공연 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "공연 정보를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요."
+      );
     } finally {
       setLoadingShows(false);
     }
@@ -166,6 +181,12 @@ export default function TicketsPage() {
     setSubmitting(true);
     setError("");
     try {
+      const ticketTypeMap: Record<string, string> = {};
+      for (const s of activeShow?.sessions || []) {
+        if (selectedSessionIds.includes(s.id) && s.ticketTypeId) {
+          ticketTypeMap[s.id] = s.ticketTypeId;
+        }
+      }
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -175,6 +196,7 @@ export default function TicketsPage() {
           phone,
           phoneConfirm,
           sessionIds: selectedSessionIds,
+          ticketTypeMap,
         }),
       });
       const data = await res.json();
@@ -200,15 +222,25 @@ export default function TicketsPage() {
     e.preventDefault();
     setLookupError("");
     setLookupResults(null);
-    if (!lookupName.trim() || lookupPhone.replace(/\D/g, "").length < 10) {
-      setLookupError("성함과 전화번호를 정확히 입력해 주세요.");
+    if (lookupPhone.replace(/\D/g, "").length < 10) {
+      setLookupError("전화번호를 정확히 입력해 주세요.");
+      return;
+    }
+    if (lookupBy === "name" && !lookupName.trim()) {
+      setLookupError("예매자 성함을 입력해 주세요.");
+      return;
+    }
+    if (lookupBy === "code" && !lookupCode.trim()) {
+      setLookupError("예매번호를 입력해 주세요.");
       return;
     }
     setLookupLoading(true);
     try {
       const qs = new URLSearchParams({
-        name: lookupName.trim(),
         phone: lookupPhone,
+        ...(lookupBy === "code"
+          ? { code: lookupCode.trim() }
+          : { name: lookupName.trim() }),
       });
       const res = await fetch(`/api/reservations?${qs.toString()}`);
       const data = await res.json();
@@ -470,7 +502,9 @@ export default function TicketsPage() {
                     </p>
                   </div>
                   <p className="text-sm text-[#1D3C63]/65 max-w-md mx-auto leading-[1.8]">
-                    예매 오픈 시각에 맞춰 본 페이지에서 티켓 예매가 열립니다.
+                    {activeShow.pendingSchedules
+                      ? "현재 예매 회차를 준비 중입니다. 오픈 일정에 맞춰 본 페이지에서 바로 예매하실 수 있습니다."
+                      : "예매 오픈 시각에 맞춰 본 페이지에서 티켓 예매가 열립니다."}
                   </p>
                   <div className="flex flex-wrap justify-center gap-3 pt-2">
                     <Link
@@ -481,12 +515,30 @@ export default function TicketsPage() {
                     </Link>
                     <button
                       type="button"
-                      onClick={() => handleSelectShow("dinoz")}
+                      onClick={() =>
+                        handleSelectShow(activeShow.id === "dinoz" ? "semokkeut" : "dinoz")
+                      }
                       className="px-6 py-3 border border-[#1D3C63] hover:bg-[#FCF686] text-[#1D3C63] font-bold text-sm"
                     >
-                      &lt;다이노즈&gt; 예매하러 가기
+                      {activeShow.id === "dinoz"
+                        ? "<세상 모든 이야기의 끝> 보기"
+                        : "<다이노즈> 예매하러 가기"}
                     </button>
                   </div>
+                </div>
+              ) : !activeShow ? (
+                <div className="bg-white border border-[#1D3C63]/16 p-10 sm:p-14 text-center space-y-4">
+                  <AlertCircle className="w-7 h-7 text-red-600 mx-auto" />
+                  <p className="text-sm text-[#1D3C63]/80">
+                    {error || "공연 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={fetchShows}
+                    className="px-5 py-2.5 bg-[#1D3C63] text-[#FCF686] text-xs font-bold"
+                  >
+                    다시 불러오기
+                  </button>
                 </div>
               ) : activeShow ? (
                 /* Swiss Editorial Booking Form */
@@ -599,14 +651,18 @@ export default function TicketsPage() {
                     <div className="divide-y divide-[#1D3C63]/16 border border-[#1D3C63]/20">
                       {activeShow.sessions.map((sess) => {
                         const checked = selectedSessionIds.includes(sess.id);
+                        const disabled =
+                          sess.isSoldOut ||
+                          sess.salesStatus === "upcoming" ||
+                          sess.salesStatus === "closed";
                         return (
                           <button
                             key={sess.id}
                             type="button"
-                            disabled={sess.isSoldOut}
+                            disabled={disabled}
                             onClick={() => toggleSession(sess.id)}
                             className={`w-full text-left px-5 py-4 transition-colors flex items-center justify-between gap-4 ${
-                              sess.isSoldOut
+                              disabled
                                 ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                                 : checked
                                 ? "bg-[#FCF686]/65 text-[#1D3C63]"
@@ -793,9 +849,41 @@ export default function TicketsPage() {
               onSubmit={handleLookup}
               className="bg-white border border-[#1D3C63]/16 p-7 sm:p-9 space-y-6"
             >
-              <div className="pb-4 border-b border-[#1D3C63]">
-                <span className="print-eyebrow text-[#1D3C63]/50">LOOKUP &amp; CANCEL</span>
-                <h2 className="text-xl font-bold text-[#1D3C63] mt-1">예매 내역 조회 및 취소</h2>
+              <div className="flex flex-wrap items-end justify-between gap-3 pb-4 border-b border-[#1D3C63]">
+                <div>
+                  <span className="print-eyebrow text-[#1D3C63]/50">RESERVATION LOOKUP</span>
+                  <h2 className="text-xl font-bold text-[#1D3C63] mt-1">예매 내역 조회</h2>
+                </div>
+                <div className="inline-flex border border-[#1D3C63]/25 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLookupBy("name");
+                      setLookupError("");
+                    }}
+                    className={`px-3 py-1.5 transition-colors ${
+                      lookupBy === "name"
+                        ? "bg-[#1D3C63] text-[#FCF686] font-bold"
+                        : "bg-[#FAF9F4] text-[#1D3C63]/70"
+                    }`}
+                  >
+                    성함으로 조회
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLookupBy("code");
+                      setLookupError("");
+                    }}
+                    className={`px-3 py-1.5 border-l border-[#1D3C63]/25 transition-colors ${
+                      lookupBy === "code"
+                        ? "bg-[#1D3C63] text-[#FCF686] font-bold"
+                        : "bg-[#FAF9F4] text-[#1D3C63]/70"
+                    }`}
+                  >
+                    예매번호로 조회
+                  </button>
+                </div>
               </div>
 
               {lookupError && (
@@ -805,19 +893,35 @@ export default function TicketsPage() {
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-bold text-[#1D3C63]/70 mb-2">
-                    예매자 성함
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={lookupName}
-                    onChange={(e) => setLookupName(e.target.value)}
-                    placeholder="성함 입력"
-                    className="w-full px-4 py-3 border border-[#1D3C63]/25 bg-[#FAF9F4]/40 text-sm focus:outline-none focus:border-[#1D3C63] focus:bg-white"
-                  />
-                </div>
+                {lookupBy === "name" ? (
+                  <div>
+                    <label className="block text-xs font-bold text-[#1D3C63]/70 mb-2">
+                      예매자 성함
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={lookupName}
+                      onChange={(e) => setLookupName(e.target.value)}
+                      placeholder="성함 입력"
+                      className="w-full px-4 py-3 border border-[#1D3C63]/25 bg-[#FAF9F4]/40 text-sm focus:outline-none focus:border-[#1D3C63] focus:bg-white"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-bold text-[#1D3C63]/70 mb-2">
+                      예매번호
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={lookupCode}
+                      onChange={(e) => setLookupCode(e.target.value.toUpperCase())}
+                      placeholder="예매번호 입력"
+                      className="w-full px-4 py-3 border border-[#1D3C63]/25 bg-[#FAF9F4]/40 text-sm print-num focus:outline-none focus:border-[#1D3C63] focus:bg-white"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-bold text-[#1D3C63]/70 mb-2">
                     전화번호
@@ -875,7 +979,7 @@ export default function TicketsPage() {
                         </div>
                       </div>
 
-                      {!r.checked_in && (
+                      {!r.checked_in && r.can_cancel !== false ? (
                         <button
                           type="button"
                           onClick={() => handleCancelTicket(r.booking_code)}
@@ -884,7 +988,17 @@ export default function TicketsPage() {
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>예매 취소</span>
                         </button>
-                      )}
+                      ) : !r.checked_in ? (
+                        <a
+                          href="https://www.instagram.com/sia.bfa.muborn/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 border border-[#1D3C63]/20 text-[#1D3C63]/70 hover:text-[#1D3C63] text-xs font-semibold shrink-0"
+                        >
+                          <Instagram className="w-3.5 h-3.5" />
+                          <span>취소·변경 DM 문의</span>
+                        </a>
+                      ) : null}
                     </div>
                   ))
                 )}

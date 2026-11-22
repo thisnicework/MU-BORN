@@ -1,13 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import {
+  getTicketingConfig,
+  fetchPlatformShows,
+  createPlatformReservations,
+  lookupPlatformReservations,
+  TicketingPlatformError,
+} from "./ticketing-bridge.mjs";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "muborn-db.json");
 
 const COOKIE_NAME = "muborn_admin_session";
 const SECRET = process.env.ADMIN_SECRET || "muborn-2026-sia-secret-key-v1";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "muborn2026";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin1234";
 
 function createInitialState() {
   return {
@@ -227,8 +234,16 @@ export async function handleApiRequest(req, res) {
   if (!pathname.startsWith("/api/")) return false;
 
   try {
+    const platformCfg = getTicketingConfig();
+
     // 1. GET /api/shows (public — NEVER exposes max_capacity or remaining seats!)
     if (pathname === "/api/shows" && method === "GET") {
+      if (platformCfg.enabled) {
+        const result = await fetchPlatformShows();
+        sendJson(res, 200, result);
+        return true;
+      }
+
       const state = ensureLoaded();
       const publicShows = state.shows.map((show) => ({
         id: show.id,
@@ -260,6 +275,42 @@ export async function handleApiRequest(req, res) {
 
     // 2. /api/reservations (GET lookup, POST create, DELETE cancel)
     if (pathname === "/api/reservations") {
+      if (platformCfg.enabled) {
+        try {
+          if (method === "GET") {
+            const result = await lookupPlatformReservations({
+              name: (url.searchParams.get("name") || "").trim(),
+              code: (url.searchParams.get("code") || "").trim(),
+              phone: (url.searchParams.get("phone") || "").trim(),
+            });
+            sendJson(res, 200, result);
+            return true;
+          }
+          if (method === "POST") {
+            const body = await readJsonBody(req);
+            const result = await createPlatformReservations(body);
+            sendJson(res, 201, result);
+            return true;
+          }
+          if (method === "DELETE") {
+            sendJson(res, 400, {
+              error: "온라인 취소는 인스타그램(@sia.bfa.muborn) DM으로 문의해 주세요.",
+            });
+            return true;
+          }
+        } catch (err) {
+          if (err instanceof TicketingPlatformError) {
+            sendJson(res, err.status, {
+              error: err.message,
+              code: err.code,
+              details: err.details,
+            });
+            return true;
+          }
+          throw err;
+        }
+      }
+
       const state = ensureLoaded();
 
       if (method === "GET") {
