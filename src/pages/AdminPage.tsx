@@ -30,10 +30,11 @@ interface AdminSession {
   max_capacity: number;
   booked_count: number;
   checked_in_count: number;
+  ticket_type_id?: string | null;
 }
 
 interface AdminReservation {
-  id: number;
+  id: number | string;
   booking_code: string;
   show_id: string;
   show_title: string;
@@ -51,6 +52,16 @@ interface AdminReservation {
   created_at: string;
 }
 
+const LOCAL_CHECKIN_KEY = "muborn_2026_admin_checkins";
+
+function loadLocalCheckins(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(LOCAL_CHECKIN_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 export default function AdminPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
@@ -60,6 +71,13 @@ export default function AdminPage() {
   const [shows, setShows] = useState<AdminShow[]>([]);
   const [sessions, setSessions] = useState<AdminSession[]>([]);
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
+  const [source, setSource] = useState<string>("local");
+  const [adminKeyMissing, setAdminKeyMissing] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [localCheckins, setLocalCheckins] = useState<Record<string, boolean>>(() =>
+    loadLocalCheckins()
+  );
   const [loading, setLoading] = useState(false);
 
   const [filterShow, setFilterShow] = useState("all");
@@ -72,6 +90,7 @@ export default function AdminPage() {
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/admin/dashboard", { cache: "no-store" });
       if (res.status === 401) {
@@ -82,6 +101,9 @@ export default function AdminPage() {
       setShows(data.shows || []);
       setSessions(data.sessions || []);
       setReservations(data.reservations || []);
+      setSource(data.source || "local");
+      setAdminKeyMissing(Boolean(data.adminKeyMissing));
+      setAdminError(data.adminError || null);
     } finally {
       setLoading(false);
     }
@@ -126,14 +148,39 @@ export default function AdminPage() {
   };
 
   const patchAdmin = async (payload: Record<string, unknown>) => {
+    setActionError(null);
     const res = await fetch("/api/admin/dashboard", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (res.ok) {
-      await loadDashboard();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setActionError(data.error || "요청 처리에 실패했습니다.");
+      return;
     }
+    await loadDashboard();
+  };
+
+  const toggleCheckin = async (r: AdminReservation) => {
+    const currentlyChecked =
+      source === "platform" ? Boolean(localCheckins[r.booking_code]) : r.checked_in === 1;
+    const next = !currentlyChecked;
+    if (source === "platform") {
+      const updated = { ...localCheckins, [r.booking_code]: next };
+      setLocalCheckins(updated);
+      try {
+        localStorage.setItem(LOCAL_CHECKIN_KEY, JSON.stringify(updated));
+      } catch {
+        // ignore storage quota errors
+      }
+      return;
+    }
+    await patchAdmin({
+      action: "toggle_checkin",
+      id: r.id,
+      checkedIn: next,
+    });
   };
 
   const filteredReservations = useMemo(() => {
@@ -205,9 +252,12 @@ export default function AdminPage() {
     );
   }
 
+  const isRowCheckedIn = (r: AdminReservation) =>
+    source === "platform" ? Boolean(localCheckins[r.booking_code]) : r.checked_in === 1;
+
   const totalConfirmed = reservations.filter((r) => r.status === "confirmed").length;
   const totalCheckedIn = reservations.filter(
-    (r) => r.status === "confirmed" && r.checked_in === 1
+    (r) => r.status === "confirmed" && isRowCheckedIn(r)
   ).length;
 
   return (
@@ -255,6 +305,22 @@ export default function AdminPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        {adminKeyMissing && (
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 text-xs sm:text-sm text-amber-900 space-y-1">
+            <div className="font-bold">관리자용 API Key (TICKETING_ADMIN_KEY) 설정 필요</div>
+            <div>
+              현재 공개 키로 회차·좌석 수량만 표시되고 있습니다. 티켓 서버 어드민에서{" "}
+              <strong>admin 권한 키(sk_live_...)</strong>를 발급해 Vercel 환경변수{" "}
+              <code>TICKETING_ADMIN_KEY</code>로 등록하면 예매자 명단 조회·취소·수량 수정이 모두 활성화됩니다.
+            </div>
+          </div>
+        )}
+        {(adminError || actionError) && (
+          <div className="bg-red-50 border-l-4 border-red-600 p-4 text-xs sm:text-sm text-red-700">
+            {actionError || adminError}
+          </div>
+        )}
+
         {/* Swiss 4-Cell KPI Strip */}
         <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-l border-[#1D3C63]/16 bg-white">
           {[
@@ -387,6 +453,7 @@ export default function AdminPage() {
                                   await patchAdmin({
                                     action: "update_capacity",
                                     sessionId: sess.id,
+                                    ticketTypeId: sess.ticket_type_id,
                                     maxCapacity: Number(editingCapVal),
                                   });
                                   setEditingCapId(null);
@@ -439,7 +506,15 @@ export default function AdminPage() {
                           </div>
                           <div className="flex justify-between text-[11px] text-[#1D3C63]/60 print-num">
                             <span>예매율 {pct}%</span>
-                            <span>현장 수령 {sess.checked_in_count}매</span>
+                            <span>
+                              현장 수령{" "}
+                              {source === "platform"
+                                ? reservations.filter(
+                                    (r) => r.session_id === sess.id && isRowCheckedIn(r)
+                                  ).length
+                                : sess.checked_in_count}
+                              매
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -569,33 +644,35 @@ export default function AdminPage() {
                         {r.status === "confirmed" && (
                           <button
                             type="button"
-                            onClick={() =>
-                              patchAdmin({
-                                action: "toggle_checkin",
-                                id: r.id,
-                                checkedIn: r.checked_in !== 1,
-                              })
-                            }
+                            onClick={() => toggleCheckin(r)}
                             className={`px-3 py-1.5 text-xs font-bold border transition-colors ${
-                              r.checked_in
+                              isRowCheckedIn(r)
                                 ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686]"
                                 : "bg-white border-[#1D3C63]/30 hover:border-[#1D3C63] text-[#1D3C63]"
                             }`}
                           >
-                            {r.checked_in ? "✓ 수령 완료" : "수령 체크"}
+                            {isRowCheckedIn(r) ? "✓ 수령 완료" : "수령 체크"}
                           </button>
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            if (
+                              r.status === "confirmed" &&
+                              !window.confirm(
+                                `[${r.booking_code}] ${r.name}님의 예매를 취소하고 잔여 좌석을 복구할까요?`
+                              )
+                            ) {
+                              return;
+                            }
                             patchAdmin({
                               action: "set_status",
                               id: r.id,
                               status: r.status === "confirmed" ? "cancelled" : "confirmed",
-                            })
-                          }
+                            });
+                          }}
                           className={`text-xs font-bold hover:underline ${
                             r.status === "confirmed" ? "text-red-600" : "text-[#1D3C63]"
                           }`}

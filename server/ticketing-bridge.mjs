@@ -63,14 +63,17 @@ export function getTicketingConfig() {
     .trim()
     .replace(/\/+$/, "");
   const apiKey = (process.env.TICKETING_API_KEY || "").trim();
+  const adminKey = (process.env.TICKETING_ADMIN_KEY || "").trim();
   const events = {
     dinoz: (process.env.DINOZ_EVENT_ID || SHOW_CATALOG[0].defaultEventId).trim(),
     semokkeut: (process.env.SEMOKKEUT_EVENT_ID || SHOW_CATALOG[1].defaultEventId).trim(),
   };
   return {
     enabled: Boolean(baseUrl && apiKey),
+    adminEnabled: Boolean(baseUrl && adminKey),
     baseUrl,
     apiKey,
+    adminKey,
     events,
   };
 }
@@ -471,4 +474,344 @@ export async function lookupPlatformReservations({ name, code, phone }) {
   });
 
   return { reservations, source: "platform" };
+}
+
+/**
+ * Create an authenticated admin client for /v1/admin/* endpoints using TICKETING_ADMIN_KEY (sk_live_...).
+ */
+function createPlatformAdminClient() {
+  const cfg = getTicketingConfig();
+  if (!cfg.adminEnabled) {
+    throw new TicketingPlatformError(
+      503,
+      "ADMIN_KEY_MISSING",
+      "티켓 서버의 관리자 API Key(TICKETING_ADMIN_KEY: sk_live_...)가 아직 설정되지 않았습니다."
+    );
+  }
+
+  async function request(reqPath, init) {
+    const res = await fetch(`${cfg.baseUrl}${reqPath}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${cfg.adminKey}`,
+        ...(init?.headers || {}),
+      },
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const err = data?.error;
+      throw new TicketingPlatformError(
+        res.status,
+        err?.code || "ADMIN_REQUEST_FAILED",
+        err?.message || `HTTP ${res.status}`,
+        err?.details
+      );
+    }
+    return data;
+  }
+
+  return {
+    listReservations: (limit = 200, offset = 0) =>
+      request(`/v1/admin/reservations?limit=${limit}&offset=${offset}`),
+    updateSchedule: (scheduleId, payload) =>
+      request(`/v1/admin/schedules/${encodeURIComponent(scheduleId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    updateTicketType: (ticketTypeId, payload) =>
+      request(`/v1/admin/ticket-types/${encodeURIComponent(ticketTypeId)}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    cancelReservation: (reservationId) =>
+      request(`/v1/admin/reservations/${encodeURIComponent(reservationId)}`, {
+        method: "DELETE",
+      }),
+  };
+}
+
+async function fetchAllPlatformReservations(adminClient) {
+  const all = [];
+  let offset = 0;
+  const limit = 200;
+  for (let page = 0; page < 10; page++) {
+    const res = await adminClient.listReservations(limit, offset);
+    const batch = Array.isArray(res?.reservations) ? res.reservations : [];
+    all.push(...batch);
+    if (batch.length < limit) break;
+    offset += limit;
+  }
+  return all;
+}
+
+/**
+ * Admin Dashboard live data (shows, sessions with max/booked/remaining, and reservations).
+ */
+export async function fetchPlatformAdminDashboard() {
+  const cfg = getTicketingConfig();
+  const publicClient = createPlatformClient();
+  const now = Date.now();
+
+  const shows = [];
+  const sessions = [];
+  const scheduleLookup = new Map();
+
+  for (const meta of SHOW_CATALOG) {
+    const eventId = cfg.events[meta.id];
+    let detail = null;
+    try {
+      detail = await publicClient.events.get(eventId);
+    } catch {
+      detail = null;
+    }
+
+    const sortedSchedules = [...(detail?.schedules || [])].sort(
+      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+    );
+
+    let earliestOpenMs = null;
+    let hasOpenSession = false;
+
+    sortedSchedules.forEach((sc, idx) => {
+      const { dateStr, timeStr } = formatKstDateTime(sc.startsAt);
+      const openMs = sc.salesOpenAt ? new Date(sc.salesOpenAt).getTime() : null;
+      const closeMs = sc.salesCloseAt ? new Date(sc.salesCloseAt).getTime() : null;
+      if (openMs !== null && !Number.isNaN(openMs)) {
+        if (earliestOpenMs === null || openMs < earliestOpenMs) {
+          earliestOpenMs = openMs;
+        }
+      }
+      const openNow =
+        (openMs === null || Number.isNaN(openMs) || now >= openMs) &&
+        (closeMs === null || Number.isNaN(closeMs) || now <= closeMs);
+      if (openNow) hasOpenSession = true;
+
+      const types = Array.isArray(sc.ticketTypes) ? sc.ticketTypes : [];
+      const primary = types[0] || null;
+      const maxCap = types.reduce((sum, t) => sum + Number(t.totalQuantity || 0), 0);
+      const remaining = types.reduce(
+        (sum, t) => sum + Math.max(0, Number(t.remainingQuantity || 0)),
+        0
+      );
+      const booked = Math.max(0, maxCap - remaining);
+
+      const sessionObj = {
+        id: sc.id,
+        show_id: meta.id,
+        round_number: idx + 1,
+        label: `${idx + 1}회차`,
+        date_str: dateStr,
+        time_str: timeStr,
+        max_capacity: maxCap,
+        booked_count: booked,
+        checked_in_count: 0,
+        ticket_type_id: primary?.id || null,
+        sales_open_at: sc.salesOpenAt,
+        sales_close_at: sc.salesCloseAt,
+        is_open_now: openNow,
+      };
+      sessions.push(sessionObj);
+      scheduleLookup.set(sc.id, sessionObj);
+    });
+
+    const openAtLabel =
+      earliestOpenMs !== null
+        ? formatKstDateTime(new Date(earliestOpenMs).toISOString()).openLabel
+        : meta.fallbackOpenAt;
+
+    shows.push({
+      id: meta.id,
+      event_id: eventId,
+      title: detail?.title || meta.fallbackTitle,
+      open_at: openAtLabel,
+      is_open: sortedSchedules.length > 0 && hasOpenSession ? 1 : 0,
+      venue: detail?.venue && detail.venue !== "-" ? detail.venue : meta.fallbackVenue,
+    });
+  }
+
+  let reservations = [];
+  let adminKeyMissing = !cfg.adminEnabled;
+  let adminError = null;
+
+  if (cfg.adminEnabled) {
+    try {
+      const adminClient = createPlatformAdminClient();
+      const rawList = await fetchAllPlatformReservations(adminClient);
+      reservations = rawList.map((r) => {
+        const sMeta = scheduleLookup.get(r.scheduleId);
+        const { dateStr, timeStr } = formatKstDateTime(r.scheduleStartsAt);
+        const phoneDigits = String(r.customerPhone || "").replace(/\D/g, "");
+        return {
+          id: r.id,
+          booking_code: r.reservationCode,
+          show_id: sMeta?.show_id || (r.eventTitle?.includes("다이노즈") ? "dinoz" : "semokkeut"),
+          show_title: r.eventTitle || "MU:BORN 2026",
+          session_id: r.scheduleId,
+          session_label: sMeta?.label || "회차",
+          date_str: sMeta?.date_str || dateStr,
+          time_str: sMeta?.time_str || timeStr,
+          round_number: sMeta?.round_number || 0,
+          name: r.customerName,
+          phone: normalizePhone(phoneDigits || r.customerPhone),
+          phone_last4: phoneDigits.slice(-4),
+          checked_in: 0,
+          checked_in_at: null,
+          status: "confirmed",
+          created_at: r.createdAt || "",
+        };
+      });
+    } catch (err) {
+      adminError = err instanceof Error ? err.message : "예매자 명단을 불러오지 못했습니다.";
+    }
+  }
+
+  return {
+    shows,
+    sessions,
+    reservations,
+    source: "platform",
+    adminKeyMissing,
+    adminError,
+  };
+}
+
+/**
+ * Admin PATCH actions proxied to ticket-server /v1/admin/*.
+ */
+export async function patchPlatformAdmin(body) {
+  const action = String(body.action || "");
+  const adminClient = createPlatformAdminClient();
+
+  if (action === "toggle_show") {
+    const showId = String(body.showId || "");
+    const isOpen = Boolean(body.isOpen);
+    const cfg = getTicketingConfig();
+    const eventId = cfg.events[showId];
+    if (!eventId) {
+      throw new TicketingPlatformError(404, "SHOW_NOT_FOUND", "공연을 찾을 수 없습니다.");
+    }
+    const publicClient = createPlatformClient();
+    const detail = await publicClient.events.get(eventId);
+    const schedulesList = detail?.schedules || [];
+    if (schedulesList.length === 0) {
+      throw new TicketingPlatformError(
+        400,
+        "NO_SCHEDULES",
+        "등록된 회차가 없어 오픈 상태를 변경할 수 없습니다. 티켓 서버에서 회차를 먼저 추가해 주세요."
+      );
+    }
+
+    const patchPayload = isOpen
+      ? { salesOpenAt: null, salesCloseAt: null, isActive: true }
+      : { salesCloseAt: new Date(Date.now() - 1000).toISOString() };
+
+    await Promise.all(
+      schedulesList.map((sc) => adminClient.updateSchedule(sc.id, patchPayload))
+    );
+    return { ok: true };
+  }
+
+  if (action === "update_capacity") {
+    const cap = Math.max(0, Math.min(5000, Math.floor(Number(body.maxCapacity))));
+    if (!Number.isFinite(cap)) {
+      throw new TicketingPlatformError(400, "INVALID_CAPACITY", "올바른 수량을 입력해 주세요.");
+    }
+    let ticketTypeId = String(body.ticketTypeId || "").trim();
+    const sessionId = String(body.sessionId || "").trim();
+    if (!ticketTypeId && sessionId) {
+      const dash = await fetchPlatformAdminDashboard();
+      const found = dash.sessions.find((s) => s.id === sessionId);
+      ticketTypeId = found?.ticket_type_id || "";
+    }
+    if (!ticketTypeId) {
+      throw new TicketingPlatformError(
+        404,
+        "TICKET_TYPE_NOT_FOUND",
+        "수정할 티켓 권종을 찾을 수 없습니다."
+      );
+    }
+    await adminClient.updateTicketType(ticketTypeId, { totalQuantity: cap });
+    return { ok: true };
+  }
+
+  if (action === "set_status") {
+    const id = String(body.id || "").trim();
+    const status = String(body.status || "");
+    if (status === "cancelled") {
+      if (!id) {
+        throw new TicketingPlatformError(400, "INVALID_ID", "예매 ID가 필요합니다.");
+      }
+      await adminClient.cancelReservation(id);
+      return { ok: true };
+    }
+    throw new TicketingPlatformError(
+      400,
+      "UNSUPPORTED_RESTORE",
+      "취소된 예매는 복원할 수 없습니다. 새로 예매해 주세요."
+    );
+  }
+
+  if (action === "toggle_checkin") {
+    return { ok: true, localOnly: true };
+  }
+
+  throw new TicketingPlatformError(400, "UNKNOWN_ACTION", "지원하지 않는 관리자 작업입니다.");
+}
+
+/**
+ * Export live platform reservations as CSV string.
+ */
+export async function exportPlatformAdminCsv({ showId = "", sessionId = "" }) {
+  const dash = await fetchPlatformAdminDashboard();
+  if (dash.adminKeyMissing) {
+    throw new TicketingPlatformError(
+      503,
+      "ADMIN_KEY_MISSING",
+      "TICKETING_ADMIN_KEY(sk_live_...)가 설정되지 않아 CSV를 내보낼 수 없습니다."
+    );
+  }
+
+  const rows = dash.reservations
+    .filter(
+      (r) =>
+        (!showId || r.show_id === showId) && (!sessionId || r.session_id === sessionId)
+    )
+    .sort((a, b) => a.round_number - b.round_number || a.name.localeCompare(b.name, "ko"));
+
+  const header = [
+    "예매번호",
+    "공연명",
+    "회차",
+    "공연일",
+    "공연시간",
+    "예매자",
+    "전화번호",
+    "뒷자리4자리",
+    "상태",
+    "예매시각",
+  ];
+  const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [
+    header.map(escape).join(","),
+    ...rows.map((r) =>
+      [
+        r.booking_code,
+        r.show_title,
+        r.session_label,
+        r.date_str,
+        r.time_str,
+        r.name,
+        r.phone,
+        r.phone_last4,
+        "예매확정",
+        r.created_at,
+      ]
+        .map(escape)
+        .join(",")
+    ),
+  ];
+
+  return lines.join("\r\n");
 }

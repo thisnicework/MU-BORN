@@ -6,6 +6,9 @@ import {
   fetchPlatformShows,
   createPlatformReservations,
   lookupPlatformReservations,
+  fetchPlatformAdminDashboard,
+  patchPlatformAdmin,
+  exportPlatformAdminCsv,
   TicketingPlatformError,
 } from "./ticketing-bridge.mjs";
 
@@ -494,6 +497,29 @@ export async function handleApiRequest(req, res) {
         sendJson(res, 401, { error: "Unauthorized" });
         return true;
       }
+
+      if (platformCfg.enabled) {
+        try {
+          if (method === "GET") {
+            const data = await fetchPlatformAdminDashboard();
+            sendJson(res, 200, data);
+            return true;
+          }
+          if (method === "PATCH") {
+            const body = await readJsonBody(req);
+            const result = await patchPlatformAdmin(body);
+            sendJson(res, 200, result);
+            return true;
+          }
+        } catch (err) {
+          if (err instanceof TicketingPlatformError) {
+            sendJson(res, err.status, { error: err.message, code: err.code });
+            return true;
+          }
+          throw err;
+        }
+      }
+
       const state = ensureLoaded();
 
       if (method === "GET") {
@@ -578,6 +604,28 @@ export async function handleApiRequest(req, res) {
         sendJson(res, 401, { error: "Unauthorized" });
         return true;
       }
+
+      if (platformCfg.enabled) {
+        try {
+          const showId = url.searchParams.get("showId") || "";
+          const sessionId = url.searchParams.get("sessionId") || "";
+          const csv = await exportPlatformAdminCsv({ showId, sessionId });
+          res.writeHead(200, {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": 'attachment; filename="muborn-2026-reservations.csv"',
+            "Cache-Control": "no-store",
+          });
+          res.end(`\uFEFF${csv}`);
+          return true;
+        } catch (err) {
+          if (err instanceof TicketingPlatformError) {
+            sendJson(res, err.status, { error: err.message, code: err.code });
+            return true;
+          }
+          throw err;
+        }
+      }
+
       const state = ensureLoaded();
       const showId = url.searchParams.get("showId") || "";
       const sessionId = url.searchParams.get("sessionId") || "";
