@@ -513,17 +513,6 @@ export default function TicketsPage() {
                     >
                       작품 상세 정보
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleSelectShow(activeShow.id === "dinoz" ? "semokkeut" : "dinoz")
-                      }
-                      className="px-6 py-3 border border-[#1D3C63] hover:bg-[#FCF686] text-[#1D3C63] font-bold text-sm"
-                    >
-                      {activeShow.id === "dinoz"
-                        ? "<세상 모든 이야기의 끝> 보기"
-                        : "<다이노즈> 예매하러 가기"}
-                    </button>
                   </div>
                 </div>
               ) : !activeShow ? (
