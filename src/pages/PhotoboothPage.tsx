@@ -993,7 +993,7 @@ export default function PhotoboothPage() {
         .join(",")}`;
       if (lastArchivedSignatureRef.current !== signature) {
         lastArchivedSignatureRef.current = signature;
-        const archiveDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+        const archiveDataUrl = canvas.toDataURL("image/jpeg", 0.85);
         fetch("/api/photobooth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1006,9 +1006,9 @@ export default function PhotoboothPage() {
               p.id === SEMO_POSTER_OPTION.id ? "포스터" : `${p.role}-${p.name}`
             ),
           }),
-          keepalive: true,
         }).catch(() => {
-          // Silently ignore any background network failures
+          // Allow retry if upload failed
+          lastArchivedSignatureRef.current = "";
         });
       }
     }
