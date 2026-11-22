@@ -460,9 +460,21 @@ export default function TicketsPage() {
                   </div>
 
                   <div className="bg-[#FAF9F4] border-l-2 border-[#1D3C63] p-5 text-xs text-[#1D3C63]/80 leading-[1.75] space-y-1">
-                    <div className="font-bold text-[#1D3C63]">현장 티켓 수령 안내</div>
+                    <div className="font-bold text-[#1D3C63]">현장 티켓 수령 및 취소 안내</div>
                     <div>• 공연 시작 1시간 전부터 티켓부스에서 예매자 성함 및 연락처 뒷자리 확인 후 수령 가능합니다.</div>
                     <div>• 공연 시작 5분 전까지 미수령 시 현장 예매로 전환됩니다.</div>
+                    <div>
+                      • 예매 취소를 원하시는 경우 공식 인스타그램(
+                      <a
+                        href="https://www.instagram.com/sia.bfa.muborn/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#1D3C63] underline underline-offset-2"
+                      >
+                        @sia.bfa.muborn
+                      </a>
+                      ) DM으로 문의해 주세요.
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-3 pt-2">
@@ -801,6 +813,21 @@ export default function TicketsPage() {
                       <span>{note}</span>
                     </li>
                   ))}
+                  <li className="grid grid-cols-[14px_1fr] gap-1.5">
+                    <span className="font-bold text-[#1D3C63]/40">•</span>
+                    <span>
+                      예매 취소를 원하시는 경우 공식 인스타그램(
+                      <a
+                        href="https://www.instagram.com/sia.bfa.muborn/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#1D3C63] underline underline-offset-2"
+                      >
+                        @sia.bfa.muborn
+                      </a>
+                      ) DM으로 문의해 주세요.
+                    </span>
+                  </li>
                 </ul>
                 <div className="pt-4 border-t print-rule flex items-center justify-between text-xs">
                   <Link to="/guide" className="font-bold text-[#1D3C63] hover:underline">
@@ -942,6 +969,21 @@ export default function TicketsPage() {
               >
                 {lookupLoading ? "조회 중..." : "예매 내역 조회하기"}
               </button>
+
+              <div className="bg-[#FAF9F4] border-l-2 border-[#1D3C63] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#1D3C63]/80">
+                <span>
+                  예매 취소를 원하시는 경우 공식 인스타그램(<strong>@sia.bfa.muborn</strong>) DM으로 문의해 주세요.
+                </span>
+                <a
+                  href="https://www.instagram.com/sia.bfa.muborn/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-bold text-[#1D3C63] hover:underline shrink-0"
+                >
+                  <Instagram className="w-4 h-4" />
+                  <span>인스타그램 DM 문의</span>
+                </a>
+              </div>
             </form>
 
             {lookupResults !== null && (
