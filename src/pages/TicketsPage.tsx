@@ -347,7 +347,7 @@ export default function TicketsPage() {
                 },
               ].map((item) => {
                 const live = shows.find((s) => s.id === item.id);
-                const isOpen = live ? live.isOpen : item.id === "dinoz";
+                const isOpen = live ? live.isOpen : false;
                 const selected = selectedShowId === item.id;
                 return (
                   <button
@@ -661,7 +661,7 @@ export default function TicketsPage() {
                             <div className="flex items-center gap-4">
                               <div
                                 className={`w-5 h-5 border flex items-center justify-center shrink-0 ${
-                                  sess.isSoldOut
+                                  disabled
                                     ? "bg-neutral-200 border-neutral-300"
                                     : checked
                                     ? "bg-[#1D3C63] border-[#1D3C63] text-[#FCF686]"
@@ -682,14 +682,22 @@ export default function TicketsPage() {
 
                             <span
                               className={`px-3 py-1 print-eyebrow shrink-0 ${
-                                sess.isSoldOut
+                                disabled
                                   ? "bg-neutral-200 text-neutral-500"
                                   : checked
                                   ? "bg-[#1D3C63] text-[#FCF686]"
                                   : "bg-[#C5DB9B]/55 text-[#1D3C63]"
                               }`}
                             >
-                              {sess.isSoldOut ? "SOLD OUT" : checked ? "SELECTED" : "OPEN"}
+                              {sess.salesStatus === "upcoming"
+                                ? "COMING SOON"
+                                : sess.salesStatus === "closed"
+                                ? "CLOSED"
+                                : sess.isSoldOut
+                                ? "SOLD OUT"
+                                : checked
+                                ? "SELECTED"
+                                : "OPEN"}
                             </span>
                           </button>
                         );
