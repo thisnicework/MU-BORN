@@ -370,10 +370,20 @@ function buildMonthGrid(month: 11 | 12): Array<number | null> {
   return cells;
 }
 
+function getDefaultCalendarMonth(): 11 | 12 {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const year = kst.getUTCFullYear();
+  const m = kst.getUTCMonth() + 1;
+  return year > 2026 || (year === 2026 && m >= 12) ? 12 : 11;
+}
+
 /** Swiss Editorial Interactive Program-Book Calendar (NOV & DEC 2026) */
 export function TapedCalendar() {
-  const [month, setMonth] = useState<11 | 12>(12);
-  const [selectedKey, setSelectedKey] = useState<string>("2026-12-05");
+  const defaultMonth = getDefaultCalendarMonth();
+  const [month, setMonth] = useState<11 | 12>(defaultMonth);
+  const [selectedKey, setSelectedKey] = useState<string>(
+    defaultMonth === 12 ? "2026-12-03" : "2026-11-22"
+  );
 
   const cells = buildMonthGrid(month);
   const monthEvents = CALENDAR_EVENTS.filter((e) => e.month === month);
