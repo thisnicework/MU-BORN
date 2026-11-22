@@ -57,28 +57,36 @@ export async function archivePhotoboothImage(body) {
   const fileName = `${timeStamp}_${show}_${themeKey}_${partnerSlug}_${rand}.${ext}`;
   const blobPathname = `muborn-4cut/${dateFolder}/${fileName}`;
 
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  const hasVercelBlobEnv = Boolean(
+    process.env.BLOB_READ_WRITE_TOKEN ||
+      process.env.BLOB_STORE_ID ||
+      process.env.VERCEL ||
+      Object.keys(process.env).some((k) => k.includes("BLOB"))
+  );
+
+  if (hasVercelBlobEnv) {
+    // Try private first (since private stores use OIDC + BLOB_STORE_ID), then public fallback
     try {
       const blob = await put(blobPathname, buffer, {
-        access: "public",
+        access: "private",
         contentType,
         addRandomSuffix: false,
       });
       return {
         ok: true,
-        storage: "vercel-blob",
+        storage: "vercel-blob-private",
         pathname: blob.pathname,
       };
     } catch {
       try {
         const blob = await put(blobPathname, buffer, {
-          access: "private",
+          access: "public",
           contentType,
           addRandomSuffix: false,
         });
         return {
           ok: true,
-          storage: "vercel-blob-private",
+          storage: "vercel-blob-public",
           pathname: blob.pathname,
         };
       } catch (err) {
